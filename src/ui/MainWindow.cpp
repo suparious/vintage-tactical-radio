@@ -24,6 +24,7 @@
 #include <QCloseEvent>
 #include <QTimer>
 #include <QStatusBar>
+#include <QLineEdit>
 
 #ifdef HAS_SPDLOG
 #include <spdlog/spdlog.h>
@@ -142,6 +143,41 @@ void MainWindow::createCentralWidget() {
     frequencyDial_ = new FrequencyDial(this);
     frequencyDial_->setFrequency(currentFrequency_);
     freqLayout->addWidget(frequencyDial_);
+    
+    // Add direct frequency input
+    auto* freqInputLayout = new QHBoxLayout();
+    auto* freqInputLabel = new QLabel(tr("Direct Input:"));
+    auto* freqInput = new QLineEdit();
+    freqInput->setPlaceholderText("96.9");
+    freqInput->setMaximumWidth(80);
+    
+    auto* freqUnitCombo = new QComboBox();
+    freqUnitCombo->addItems({"MHz", "kHz"});
+    freqUnitCombo->setMaximumWidth(60);
+    
+    auto* freqGoButton = new QPushButton(tr("Go"));
+    freqGoButton->setMaximumWidth(40);
+    
+    // Connect direct frequency input
+    auto tuneToFrequency = [this, freqInput, freqUnitCombo]() {
+        bool ok;
+        double value = freqInput->text().toDouble(&ok);
+        if (ok) {
+            double multiplier = (freqUnitCombo->currentIndex() == 0) ? 1e6 : 1e3;
+            onFrequencyChanged(value * multiplier);
+        }
+    };
+    
+    connect(freqGoButton, &QPushButton::clicked, tuneToFrequency);
+    connect(freqInput, &QLineEdit::returnPressed, tuneToFrequency);
+    
+    freqInputLayout->addWidget(freqInputLabel);
+    freqInputLayout->addWidget(freqInput);
+    freqInputLayout->addWidget(freqUnitCombo);
+    freqInputLayout->addWidget(freqGoButton);
+    freqInputLayout->addStretch();
+    
+    freqLayout->addLayout(freqInputLayout);
     
     topLayout->addWidget(freqGroup);
     

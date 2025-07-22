@@ -14,8 +14,12 @@ SpectrumDisplay::SpectrumDisplay(QWidget* parent)
     , persistenceEnabled_(true)
     , phosphorDecay_(0.95f)
     , colorScheme_(0)
-    , minDb_(-100.0f)
-    , maxDb_(0.0f) {
+    , minDb_(-120.0f)
+    , maxDb_(-10.0f)
+    , autoRange_(true)
+    , autoRangeMin_(-100.0f)
+    , autoRangeMax_(-20.0f)
+    , autoRangeAlpha_(0.1f) {
     
     setMinimumSize(400, 200);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -30,6 +34,31 @@ SpectrumDisplay::SpectrumDisplay(QWidget* parent)
 void SpectrumDisplay::updateSpectrum(const float* data, size_t length) {
     // Update spectrum data
     spectrumData_.assign(data, data + length);
+    
+    // Auto-ranging
+    if (autoRange_ && !spectrumData_.empty()) {
+        float minVal = *std::min_element(spectrumData_.begin(), spectrumData_.end());
+        float maxVal = *std::max_element(spectrumData_.begin(), spectrumData_.end());
+        
+        // Add some headroom
+        minVal -= 10.0f;
+        maxVal += 10.0f;
+        
+        // Smooth the auto-range values
+        autoRangeMin_ = autoRangeMin_ * (1.0f - autoRangeAlpha_) + minVal * autoRangeAlpha_;
+        autoRangeMax_ = autoRangeMax_ * (1.0f - autoRangeAlpha_) + maxVal * autoRangeAlpha_;
+        
+        // Update display range
+        minDb_ = std::max(-120.0f, autoRangeMin_);
+        maxDb_ = std::min(0.0f, autoRangeMax_);
+        
+        // Ensure minimum range
+        if (maxDb_ - minDb_ < 20.0f) {
+            float center = (minDb_ + maxDb_) / 2.0f;
+            minDb_ = center - 10.0f;
+            maxDb_ = center + 10.0f;
+        }
+    }
     
     // Update averaging buffer
     if (averaging_ > 1) {

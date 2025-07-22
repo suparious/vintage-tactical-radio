@@ -42,6 +42,8 @@ public slots:
     void setPersistence(bool enable);
     void setPhosphorDecay(float rate);
     void setColorScheme(int scheme);
+    void setAutoRange(bool enable) { autoRange_ = enable; }
+    void setDbRange(float min, float max) { minDb_ = min; maxDb_ = max; autoRange_ = false; }
     
 protected:
     void paintEvent(QPaintEvent* event) override;
@@ -70,6 +72,12 @@ private:
     int colorScheme_;
     float minDb_;
     float maxDb_;
+    
+    // Auto-ranging
+    bool autoRange_;
+    float autoRangeMin_;
+    float autoRangeMax_;
+    float autoRangeAlpha_;
     
     // Drawing methods
     void drawBackground(QPainter& painter, const QRect& rect);

@@ -273,12 +273,21 @@ void DSPEngine::processSpectrum(const std::complex<float>* data, size_t length) 
     // Execute FFT
     fftwf_execute(fftPlan_);
     
-    // Calculate magnitude spectrum in dB
+    // Calculate magnitude spectrum in dB with proper normalization
+    const float normFactor = 1.0f / (fftSize_ * fftSize_);  // FFT normalization
+    const float refLevel = 1.0f;  // Reference level for dB calculation
+    
     for (size_t i = 0; i < fftSize_; i++) {
         float real = fftOut_[i][0];
         float imag = fftOut_[i][1];
-        float magnitude = sqrtf(real * real + imag * imag);
-        spectrumBuffer_[i] = 20.0f * log10f(magnitude + 1e-10f);
+        float magnitude = sqrtf((real * real + imag * imag) * normFactor);
+        
+        // Convert to dB with proper scaling
+        // Add offset to keep values in reasonable range (-120 to 0 dB)
+        float dB = 20.0f * log10f(magnitude / refLevel + 1e-10f);
+        
+        // Clamp to reasonable range
+        spectrumBuffer_[i] = std::max(-120.0f, std::min(0.0f, dB));
     }
     
     // Rearrange spectrum (negative frequencies first)
@@ -297,7 +306,13 @@ void DSPEngine::calculateSignalStrength(const std::complex<float>* data, size_t 
     }
     
     float rms = sqrtf(sum / length);
+    // Convert to dB relative to full scale (1.0)
+    // Since our IQ data is normalized to [-1, 1], full scale is 1.0
     float dB = 20.0f * log10f(rms + 1e-10f);
+    
+    // Typical values will be around -30 to -60 dB for normal signals
+    // Clamp to reasonable range
+    dB = std::max(-100.0f, std::min(0.0f, dB));
     
     // Apply some smoothing
     float alpha = 0.1f;
