@@ -10,8 +10,9 @@
 
 AudioOutput::AudioOutput(QObject* parent)
     : QIODevice(parent)
-    , audioDevice_(nullptr)
     , volume_(1.0f) {
+    
+    audioDevice_ = nullptr;
     
     initializeFormat();
     open(QIODevice::ReadOnly);
@@ -184,6 +185,7 @@ void AudioOutput::writeAudio(const float* data, size_t samples) {
                     written, totalBytes);
 #endif
     }
+}
 
 qint64 AudioOutput::readData(char* data, qint64 maxlen) {
     // This is called by QAudioSink to pull data

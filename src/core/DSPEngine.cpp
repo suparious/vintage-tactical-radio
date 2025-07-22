@@ -210,7 +210,6 @@ void DSPEngine::processingWorker() {
         }
         
         // Apply squelch
-        bool wasSquelched = squelched_;
         if (squelch_) {
             squelched_ = squelch_->process(audioBuffer_.data(), blockSize, signalStrength_);
         }
