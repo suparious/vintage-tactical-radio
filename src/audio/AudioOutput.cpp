@@ -10,6 +10,7 @@
 
 AudioOutput::AudioOutput(QObject* parent)
     : QIODevice(parent)
+    , audioDevice_(nullptr)
     , volume_(1.0f) {
     
     initializeFormat();
@@ -134,8 +135,8 @@ bool AudioOutput::start() {
     }
     
     if (audioSink_) {
-        audioSink_->start(this);
-        return audioSink_->state() == QAudio::ActiveState;
+        audioDevice_ = audioSink_->start();
+        return audioDevice_ != nullptr;
     }
     
     return false;
@@ -144,6 +145,7 @@ bool AudioOutput::start() {
 void AudioOutput::stop() {
     if (audioSink_) {
         audioSink_->stop();
+        audioDevice_ = nullptr;
     }
 }
 
@@ -159,7 +161,7 @@ void AudioOutput::setVolume(float volume) {
 }
 
 void AudioOutput::writeAudio(const float* data, size_t samples) {
-    if (!audioSink_ || audioSink_->state() != QAudio::ActiveState) {
+    if (!audioSink_ || !audioDevice_) {
         return;
     }
     
@@ -173,16 +175,15 @@ void AudioOutput::writeAudio(const float* data, size_t samples) {
     
     convertFloatToFormat(data, conversionBuffer_.data(), samples);
     
-    // Write to audio sink
-    qint64 written = audioSink_->write(conversionBuffer_.data(), totalBytes);
+    // Write to the audio device
+    qint64 written = audioDevice_->write(conversionBuffer_.data(), totalBytes);
     
-    if (written != totalBytes) {
+    if (written != static_cast<qint64>(totalBytes)) {
 #ifdef HAS_SPDLOG
         spdlog::warn("Audio underrun: {} bytes written of {} requested", 
                     written, totalBytes);
 #endif
     }
-}
 
 qint64 AudioOutput::readData(char* data, qint64 maxlen) {
     // This is called by QAudioSink to pull data

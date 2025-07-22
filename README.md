@@ -38,9 +38,11 @@ A native Linux application that emulates a vintage military/tactical radio inter
 # Install dependencies
 sudo apt update
 sudo apt install build-essential cmake git
-sudo apt install qt6-base-dev qt6-multimedia-dev libqt6opengl6-dev
+sudo apt install qt6-base-dev qt6-multimedia-dev libqt6opengl6-dev qt6-tools-dev
 sudo apt install librtlsdr-dev libfftw3-dev
 sudo apt install libasound2-dev libpulse-dev
+
+sudo apt install qt6-base-dev qt6-multimedia-dev libqt6opengl6-dev qt6-tools-dev
 
 # Optional: Install spdlog for enhanced logging
 sudo apt install libspdlog-dev

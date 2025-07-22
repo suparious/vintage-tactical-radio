@@ -23,6 +23,7 @@
 #include <QMessageBox>
 #include <QCloseEvent>
 #include <QTimer>
+#include <QStatusBar>
 
 #ifdef HAS_SPDLOG
 #include <spdlog/spdlog.h>
@@ -590,7 +591,7 @@ void MainWindow::onEQModeChanged(int mode) {
 
 void MainWindow::onEQPresetChanged(int preset) {
     auto presetNames = equalizer_->getPresetNames();
-    if (preset >= 0 && preset < presetNames.size()) {
+    if (preset >= 0 && static_cast<size_t>(preset) < presetNames.size()) {
         equalizer_->loadPreset(presetNames[preset]);
         
         // Update knobs to reflect preset
@@ -615,7 +616,7 @@ void MainWindow::onEQResetClicked() {
 void MainWindow::onAudioDeviceChanged(int index) {
     if (index >= 0 && index < audioDeviceCombo_->count()) {
         auto devices = audioOutput_->getDevices();
-        if (index < devices.size()) {
+        if (static_cast<size_t>(index) < devices.size()) {
             audioOutput_->setDevice(devices[index].id);
         }
     }

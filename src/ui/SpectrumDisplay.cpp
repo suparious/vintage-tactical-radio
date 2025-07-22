@@ -1,5 +1,6 @@
 #include "SpectrumDisplay.h"
 #include <QPainter>
+#include <QPainterPath>
 #include <QLinearGradient>
 #include <algorithm>
 #include <cmath>
@@ -33,7 +34,7 @@ void SpectrumDisplay::updateSpectrum(const float* data, size_t length) {
     // Update averaging buffer
     if (averaging_ > 1) {
         averageBuffer_.push_back(spectrumData_);
-        if (averageBuffer_.size() > averaging_) {
+        if (averageBuffer_.size() > static_cast<size_t>(averaging_)) {
             averageBuffer_.pop_front();
         }
         
@@ -269,7 +270,7 @@ void SpectrumDisplay::drawPhosphor(QPainter& painter, const QRect& rect) {
 }
 
 void SpectrumDisplay::updateWaterfall() {
-    if (waterfallImage_.isNull() || waterfallImage_.width() != spectrumData_.size()) {
+    if (waterfallImage_.isNull() || static_cast<size_t>(waterfallImage_.width()) != spectrumData_.size()) {
         // Initialize waterfall image
         waterfallImage_ = QImage(spectrumData_.size(), 256, QImage::Format_RGB32);
         waterfallImage_.fill(Qt::black);

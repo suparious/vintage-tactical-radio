@@ -62,6 +62,7 @@ private slots:
 private:
     QAudioFormat format_;
     std::unique_ptr<QAudioSink> audioSink_;
+    QIODevice* audioDevice_;
     QAudioDevice currentDevice_;
     float volume_;
     
