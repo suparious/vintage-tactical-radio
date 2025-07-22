@@ -1,2 +1,250 @@
 /* Military Olive Theme - Vintage Tactical Radio */
-/* This file is loaded by VintageTheme class */
+/* Authentic military radio aesthetic with olive drab colors */
+
+/* Main Window */
+QMainWindow {
+    background-color: #3B3B2F;
+    color: #F4E6D7;
+}
+
+/* Central Widget Background */
+QWidget {
+    background-color: #3B3B2F;
+    color: #F4E6D7;
+    font-family: "Arial", "Liberation Sans", sans-serif;
+    font-size: 12px;
+}
+
+/* Group Boxes - Control Panels */
+QGroupBox {
+    background-color: #4A4A3D;
+    border: 2px solid #5A5A4D;
+    border-radius: 5px;
+    margin-top: 1ex;
+    padding-top: 10px;
+    font-weight: bold;
+    font-size: 11px;
+    text-transform: uppercase;
+}
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+    left: 10px;
+    padding: 0 10px 0 10px;
+    color: #F4E6D7;
+}
+
+/* Frequency Display Group */
+#frequencyGroup {
+    background-color: #2A2A1F;
+    border: 3px solid #5A5A4D;
+}
+
+/* Spectrum Display Group */
+#spectrumGroup {
+    background-color: #1A1A0F;
+    border: 2px solid #4A4A3D;
+}
+
+/* Labels */
+QLabel {
+    color: #F4E6D7;
+    background-color: transparent;
+}
+
+/* Push Buttons */
+QPushButton {
+    background-color: #5A5A4D;
+    border: 2px solid #6A6A5D;
+    border-radius: 5px;
+    padding: 5px 15px;
+    color: #F4E6D7;
+    font-weight: bold;
+    min-height: 25px;
+}
+
+QPushButton:hover {
+    background-color: #6A6A5D;
+    border-color: #7A7A6D;
+}
+
+QPushButton:pressed {
+    background-color: #4A4A3D;
+    border-color: #5A5A4D;
+}
+
+QPushButton:checked {
+    background-color: #FF6B00;
+    border-color: #FF8B20;
+    color: #FFFFFF;
+}
+
+/* Start/Stop Button */
+#startStopButton {
+    background-color: #8B0000;
+    border: 3px solid #A00000;
+    font-size: 14px;
+    min-height: 35px;
+    text-transform: uppercase;
+}
+
+#startStopButton:hover {
+    background-color: #A00000;
+}
+
+#startStopButton:checked {
+    background-color: #00A000;
+    border-color: #00C000;
+}
+
+/* Combo Boxes */
+QComboBox {
+    background-color: #4A4A3D;
+    border: 2px solid #5A5A4D;
+    border-radius: 3px;
+    padding: 5px;
+    color: #F4E6D7;
+    min-height: 25px;
+}
+
+QComboBox:hover {
+    border-color: #6A6A5D;
+}
+
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 20px;
+    border-left: 1px solid #5A5A4D;
+}
+
+QComboBox::down-arrow {
+    image: none;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 6px solid #F4E6D7;
+    margin-top: 2px;
+}
+
+QComboBox QAbstractItemView {
+    background-color: #3B3B2F;
+    border: 2px solid #5A5A4D;
+    selection-background-color: #FF6B00;
+    selection-color: #FFFFFF;
+}
+
+/* Scroll Bars */
+QScrollBar:vertical {
+    background-color: #3B3B2F;
+    width: 12px;
+    border: none;
+}
+
+QScrollBar::handle:vertical {
+    background-color: #5A5A4D;
+    min-height: 20px;
+    border-radius: 6px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background-color: #6A6A5D;
+}
+
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical {
+    height: 0px;
+}
+
+/* Menu Bar */
+QMenuBar {
+    background-color: #2A2A1F;
+    color: #F4E6D7;
+    border-bottom: 2px solid #4A4A3D;
+}
+
+QMenuBar::item {
+    padding: 5px 10px;
+    background-color: transparent;
+}
+
+QMenuBar::item:selected {
+    background-color: #4A4A3D;
+}
+
+QMenu {
+    background-color: #3B3B2F;
+    border: 2px solid #5A5A4D;
+    color: #F4E6D7;
+}
+
+QMenu::item {
+    padding: 5px 20px;
+}
+
+QMenu::item:selected {
+    background-color: #FF6B00;
+    color: #FFFFFF;
+}
+
+/* Status Bar */
+QStatusBar {
+    background-color: #2A2A1F;
+    color: #F4E6D7;
+    border-top: 1px solid #4A4A3D;
+}
+
+/* Tool Tips */
+QToolTip {
+    background-color: #4A4A3D;
+    color: #F4E6D7;
+    border: 1px solid #5A5A4D;
+    padding: 5px;
+    border-radius: 3px;
+}
+
+/* VintageKnob specific styling */
+VintageKnob {
+    background-color: transparent;
+}
+
+/* VintageMeter specific styling */
+VintageMeter {
+    background-color: #1A1A0F;
+    border: 2px solid #4A4A3D;
+    border-radius: 5px;
+}
+
+/* FrequencyDial specific styling */
+FrequencyDial {
+    background-color: #2A2A1F;
+    border: 3px solid #5A5A4D;
+    border-radius: 8px;
+}
+
+/* SpectrumDisplay specific styling */
+SpectrumDisplay {
+    background-color: #0A0A05;
+    border: 2px solid #3A3A2D;
+}
+
+/* Equalizer Panel */
+#equalizerPanel {
+    background-color: #3A3A2D;
+    border: 2px solid #5A5A4D;
+}
+
+/* Settings Panel */
+#settingsPanel {
+    background-color: #3A3A2D;
+    border: 2px solid #5A5A4D;
+}
+
+/* Control Panel */
+#controlPanel {
+    background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                               stop: 0 #4A4A3D,
+                               stop: 0.5 #3A3A2D,
+                               stop: 1 #2A2A1F);
+    border: 3px solid #5A5A4D;
+    border-radius: 8px;
+}

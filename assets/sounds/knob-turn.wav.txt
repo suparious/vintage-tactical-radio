@@ -1,0 +1,21 @@
+# Sound Effect Placeholder
+
+This file represents the knob turn sound effect.
+
+## Requirements:
+- Duration: 0.1-0.2 seconds
+- Type: Mechanical rotation sound
+- Characteristics: Light friction, subtle click at detents
+- Format: WAV, 44.1kHz, 16-bit
+- Volume: Normalized to -12dB
+
+## Description:
+A subtle mechanical sound of a metal knob rotating against a textured surface, 
+similar to vintage military radio equipment. Should have a slight metallic 
+resonance and friction sound.
+
+## Alternative:
+Can be synthesized or use a recording of:
+- Potentiometer rotation
+- Metal dial turning
+- Vintage radio knob

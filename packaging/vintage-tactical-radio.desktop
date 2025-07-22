@@ -3,11 +3,21 @@ Version=1.0
 Type=Application
 Name=Vintage Tactical Radio
 GenericName=SDR Radio Receiver
-Comment=RTL-SDR based vintage military radio application
+Comment=Military-style software defined radio application
+Exec=vintage-tactical-radio %F
 Icon=vintage-tactical-radio
-Exec=vintage-tactical-radio %U
 Terminal=false
 Categories=AudioVideo;Audio;HamRadio;
-Keywords=radio;sdr;rtl-sdr;ham;scanner;receiver;fm;am;
-StartupNotify=true
+Keywords=radio;sdr;rtl-sdr;ham;amateur;scanner;receiver;tactical;military;
 MimeType=application/x-vtr-memory;
+StartupNotify=true
+StartupWMClass=vintage-tactical-radio
+Actions=Start;QuickTune;
+
+[Desktop Action Start]
+Name=Start Radio
+Exec=vintage-tactical-radio --start
+
+[Desktop Action QuickTune]
+Name=Quick Tune to FM
+Exec=vintage-tactical-radio --frequency 96900000 --mode fm

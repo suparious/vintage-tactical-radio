@@ -1,2 +1,257 @@
 /* Night Mode Theme - Vintage Tactical Radio */
-/* This file is loaded by VintageTheme class */
+/* Red-filtered display for night operations - preserves night vision */
+
+/* Main Window */
+QMainWindow {
+    background-color: #1A0000;
+    color: #FF0000;
+}
+
+/* Central Widget Background */
+QWidget {
+    background-color: #1A0000;
+    color: #FF0000;
+    font-family: "Arial", "Liberation Sans", sans-serif;
+    font-size: 12px;
+}
+
+/* Group Boxes - Control Panels */
+QGroupBox {
+    background-color: #2D0000;
+    border: 2px solid #400000;
+    border-radius: 5px;
+    margin-top: 1ex;
+    padding-top: 10px;
+    font-weight: bold;
+    font-size: 11px;
+    text-transform: uppercase;
+}
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+    left: 10px;
+    padding: 0 10px 0 10px;
+    color: #FF0000;
+}
+
+/* Frequency Display Group */
+#frequencyGroup {
+    background-color: #0D0000;
+    border: 3px solid #400000;
+}
+
+/* Spectrum Display Group */
+#spectrumGroup {
+    background-color: #080000;
+    border: 2px solid #2D0000;
+}
+
+/* Labels */
+QLabel {
+    color: #FF0000;
+    background-color: transparent;
+}
+
+/* Push Buttons */
+QPushButton {
+    background-color: #400000;
+    border: 2px solid #590000;
+    border-radius: 5px;
+    padding: 5px 15px;
+    color: #FF0000;
+    font-weight: bold;
+    min-height: 25px;
+}
+
+QPushButton:hover {
+    background-color: #590000;
+    border-color: #730000;
+}
+
+QPushButton:pressed {
+    background-color: #2D0000;
+    border-color: #400000;
+}
+
+QPushButton:checked {
+    background-color: #CC0000;
+    border-color: #FF0000;
+    color: #FFCCCC;
+}
+
+/* Start/Stop Button */
+#startStopButton {
+    background-color: #590000;
+    border: 3px solid #730000;
+    font-size: 14px;
+    min-height: 35px;
+    text-transform: uppercase;
+}
+
+#startStopButton:hover {
+    background-color: #730000;
+}
+
+#startStopButton:checked {
+    background-color: #8C0000;
+    border-color: #A60000;
+}
+
+/* Combo Boxes */
+QComboBox {
+    background-color: #2D0000;
+    border: 2px solid #400000;
+    border-radius: 3px;
+    padding: 5px;
+    color: #FF0000;
+    min-height: 25px;
+}
+
+QComboBox:hover {
+    border-color: #590000;
+}
+
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 20px;
+    border-left: 1px solid #400000;
+}
+
+QComboBox::down-arrow {
+    image: none;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 6px solid #FF0000;
+    margin-top: 2px;
+}
+
+QComboBox QAbstractItemView {
+    background-color: #1A0000;
+    border: 2px solid #400000;
+    selection-background-color: #CC0000;
+    selection-color: #FFCCCC;
+}
+
+/* Scroll Bars */
+QScrollBar:vertical {
+    background-color: #1A0000;
+    width: 12px;
+    border: none;
+}
+
+QScrollBar::handle:vertical {
+    background-color: #400000;
+    min-height: 20px;
+    border-radius: 6px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background-color: #590000;
+}
+
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical {
+    height: 0px;
+}
+
+/* Menu Bar */
+QMenuBar {
+    background-color: #0D0000;
+    color: #FF0000;
+    border-bottom: 2px solid #2D0000;
+}
+
+QMenuBar::item {
+    padding: 5px 10px;
+    background-color: transparent;
+}
+
+QMenuBar::item:selected {
+    background-color: #2D0000;
+}
+
+QMenu {
+    background-color: #1A0000;
+    border: 2px solid #400000;
+    color: #FF0000;
+}
+
+QMenu::item {
+    padding: 5px 20px;
+}
+
+QMenu::item:selected {
+    background-color: #CC0000;
+    color: #FFCCCC;
+}
+
+/* Status Bar */
+QStatusBar {
+    background-color: #0D0000;
+    color: #FF0000;
+    border-top: 1px solid #2D0000;
+}
+
+/* Tool Tips */
+QToolTip {
+    background-color: #2D0000;
+    color: #FF0000;
+    border: 1px solid #400000;
+    padding: 5px;
+    border-radius: 3px;
+}
+
+/* VintageKnob specific styling */
+VintageKnob {
+    background-color: transparent;
+}
+
+/* VintageMeter specific styling */
+VintageMeter {
+    background-color: #080000;
+    border: 2px solid #2D0000;
+    border-radius: 5px;
+}
+
+/* FrequencyDial specific styling */
+FrequencyDial {
+    background-color: #0D0000;
+    border: 3px solid #400000;
+    border-radius: 8px;
+}
+
+/* SpectrumDisplay specific styling */
+SpectrumDisplay {
+    background-color: #000000;
+    border: 2px solid #1A0000;
+}
+
+/* Equalizer Panel */
+#equalizerPanel {
+    background-color: #1A0000;
+    border: 2px solid #400000;
+}
+
+/* Settings Panel */
+#settingsPanel {
+    background-color: #1A0000;
+    border: 2px solid #400000;
+}
+
+/* Control Panel */
+#controlPanel {
+    background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                               stop: 0 #2D0000,
+                               stop: 0.5 #1A0000,
+                               stop: 1 #0D0000);
+    border: 3px solid #400000;
+    border-radius: 8px;
+}
+
+/* Special night mode adjustments */
+* {
+    /* Remove all non-red colors from any child elements */
+    selection-background-color: #CC0000;
+    selection-color: #FFCCCC;
+}

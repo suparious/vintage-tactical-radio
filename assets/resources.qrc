@@ -2,8 +2,8 @@
 <RCC version="1.0">
     <qresource prefix="/">
         <!-- Images -->
-        <file>images/radio-icon.png</file>
-        <file>images/vintage-logo.png</file>
+        <file>images/radio-icon.svg</file>
+        <file>images/vintage-logo.svg</file>
         
         <!-- Themes -->
         <file>themes/military-olive.qss</file>
@@ -12,14 +12,16 @@
         <file>themes/desert-tan.qss</file>
         <file>themes/black-ops.qss</file>
         
-        <!-- Sounds -->
-        <file>sounds/knob-turn.wav</file>
-        <file>sounds/switch-click.wav</file>
-        <file>sounds/button-press.wav</file>
-        <file>sounds/tuning-swoosh.wav</file>
-        <file>sounds/band-switch.wav</file>
-        <file>sounds/static-noise.wav</file>
-        <file>sounds/squelch-tail.wav</file>
-        <file>sounds/tube-warmup.wav</file>
+        <!-- Note: Sound files will be added when available -->
+        <!-- Planned sounds:
+        - sounds/knob-turn.wav
+        - sounds/switch-click.wav
+        - sounds/button-press.wav
+        - sounds/tuning-swoosh.wav
+        - sounds/band-switch.wav
+        - sounds/static-noise.wav
+        - sounds/squelch-tail.wav
+        - sounds/tube-warmup.wav
+        -->
     </qresource>
 </RCC>

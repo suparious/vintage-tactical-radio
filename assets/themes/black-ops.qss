@@ -1,2 +1,278 @@
 /* Black Ops Theme - Vintage Tactical Radio */
-/* This file is loaded by VintageTheme class */
+/* Modern tactical/stealth operations theme */
+
+/* Main Window */
+QMainWindow {
+    background-color: #0A0A0A;
+    color: #00FF00;
+}
+
+/* Central Widget Background */
+QWidget {
+    background-color: #0A0A0A;
+    color: #00FF00;
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: 12px;
+}
+
+/* Group Boxes - Control Panels */
+QGroupBox {
+    background-color: #141414;
+    border: 2px solid #00FF00;
+    border-radius: 0px;
+    margin-top: 1ex;
+    padding-top: 10px;
+    font-weight: bold;
+    font-size: 11px;
+    text-transform: uppercase;
+}
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+    left: 10px;
+    padding: 0 10px 0 10px;
+    color: #00FF00;
+    background-color: #0A0A0A;
+}
+
+/* Frequency Display Group */
+#frequencyGroup {
+    background-color: #000000;
+    border: 3px solid #00FF00;
+    box-shadow: inset 0 0 10px #00FF00;
+}
+
+/* Spectrum Display Group */
+#spectrumGroup {
+    background-color: #000000;
+    border: 2px solid #00FF00;
+}
+
+/* Labels */
+QLabel {
+    color: #00FF00;
+    background-color: transparent;
+}
+
+/* Push Buttons */
+QPushButton {
+    background-color: #1A1A1A;
+    border: 2px solid #00FF00;
+    border-radius: 0px;
+    padding: 5px 15px;
+    color: #00FF00;
+    font-weight: bold;
+    min-height: 25px;
+    text-transform: uppercase;
+}
+
+QPushButton:hover {
+    background-color: #00FF00;
+    color: #000000;
+    box-shadow: 0 0 10px #00FF00;
+}
+
+QPushButton:pressed {
+    background-color: #00AA00;
+    border-color: #00FF00;
+    color: #000000;
+}
+
+QPushButton:checked {
+    background-color: #00FF00;
+    color: #000000;
+    box-shadow: 0 0 20px #00FF00;
+}
+
+/* Start/Stop Button */
+#startStopButton {
+    background-color: #1A0000;
+    border: 3px solid #FF0000;
+    font-size: 14px;
+    min-height: 35px;
+    text-transform: uppercase;
+    color: #FF0000;
+}
+
+#startStopButton:hover {
+    background-color: #FF0000;
+    color: #000000;
+    box-shadow: 0 0 15px #FF0000;
+}
+
+#startStopButton:checked {
+    background-color: #00FF00;
+    border-color: #00FF00;
+    color: #000000;
+    box-shadow: 0 0 20px #00FF00;
+}
+
+/* Combo Boxes */
+QComboBox {
+    background-color: #141414;
+    border: 2px solid #00FF00;
+    border-radius: 0px;
+    padding: 5px;
+    color: #00FF00;
+    min-height: 25px;
+}
+
+QComboBox:hover {
+    border-color: #00FF00;
+    box-shadow: 0 0 5px #00FF00;
+}
+
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 20px;
+    border-left: 2px solid #00FF00;
+}
+
+QComboBox::down-arrow {
+    image: none;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 6px solid #00FF00;
+    margin-top: 2px;
+}
+
+QComboBox QAbstractItemView {
+    background-color: #0A0A0A;
+    border: 2px solid #00FF00;
+    selection-background-color: #00FF00;
+    selection-color: #000000;
+}
+
+/* Scroll Bars */
+QScrollBar:vertical {
+    background-color: #0A0A0A;
+    width: 12px;
+    border: 1px solid #00FF00;
+}
+
+QScrollBar::handle:vertical {
+    background-color: #00FF00;
+    min-height: 20px;
+    border-radius: 0px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background-color: #00FF00;
+    box-shadow: 0 0 5px #00FF00;
+}
+
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical {
+    height: 0px;
+}
+
+/* Menu Bar */
+QMenuBar {
+    background-color: #000000;
+    color: #00FF00;
+    border-bottom: 2px solid #00FF00;
+}
+
+QMenuBar::item {
+    padding: 5px 10px;
+    background-color: transparent;
+}
+
+QMenuBar::item:selected {
+    background-color: #00FF00;
+    color: #000000;
+}
+
+QMenu {
+    background-color: #0A0A0A;
+    border: 2px solid #00FF00;
+    color: #00FF00;
+}
+
+QMenu::item {
+    padding: 5px 20px;
+}
+
+QMenu::item:selected {
+    background-color: #00FF00;
+    color: #000000;
+}
+
+/* Status Bar */
+QStatusBar {
+    background-color: #000000;
+    color: #00FF00;
+    border-top: 1px solid #00FF00;
+    font-family: "Consolas", monospace;
+}
+
+/* Tool Tips */
+QToolTip {
+    background-color: #000000;
+    color: #00FF00;
+    border: 1px solid #00FF00;
+    padding: 5px;
+    border-radius: 0px;
+}
+
+/* VintageKnob specific styling */
+VintageKnob {
+    background-color: transparent;
+}
+
+/* VintageMeter specific styling */
+VintageMeter {
+    background-color: #000000;
+    border: 2px solid #00FF00;
+    border-radius: 0px;
+    color: #00FF00;
+}
+
+/* FrequencyDial specific styling */
+FrequencyDial {
+    background-color: #000000;
+    border: 3px solid #00FF00;
+    border-radius: 0px;
+    color: #00FF00;
+    font-family: "Consolas", monospace;
+}
+
+/* SpectrumDisplay specific styling */
+SpectrumDisplay {
+    background-color: #000000;
+    border: 2px solid #00FF00;
+    box-shadow: inset 0 0 5px #00FF00;
+}
+
+/* Equalizer Panel */
+#equalizerPanel {
+    background-color: #0F0F0F;
+    border: 2px solid #00FF00;
+}
+
+/* Settings Panel */
+#settingsPanel {
+    background-color: #0F0F0F;
+    border: 2px solid #00FF00;
+}
+
+/* Control Panel */
+#controlPanel {
+    background-color: #141414;
+    border: 3px solid #00FF00;
+    border-radius: 0px;
+}
+
+/* Special effects for black ops theme */
+* {
+    /* Monospace font throughout for tactical feel */
+    font-family: "Consolas", "Courier New", monospace;
+}
+
+/* Pulsing effect for active elements */
+@keyframes pulse {
+    0% { box-shadow: 0 0 5px #00FF00; }
+    50% { box-shadow: 0 0 20px #00FF00; }
+    100% { box-shadow: 0 0 5px #00FF00; }
+}
