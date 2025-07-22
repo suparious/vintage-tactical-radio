@@ -3,6 +3,8 @@
 
 #include <vector>
 #include <complex>
+#include <cstddef>  // for size_t
+#include <cstdint>  // for uint32_t
 #include <fftw3.h>
 
 class NoiseReduction {

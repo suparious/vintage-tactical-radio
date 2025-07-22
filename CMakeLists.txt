@@ -76,10 +76,10 @@ set(HEADERS
 )
 
 # Resources
-qt6_add_resources(RESOURCES assets/resources.qrc)
+qt6_add_resources(RESOURCE_FILES assets/resources.qrc)
 
 # Create executable
-add_executable(vintage-tactical-radio ${SOURCES} ${HEADERS} ${RESOURCES})
+add_executable(vintage-tactical-radio ${SOURCES} ${HEADERS} ${RESOURCE_FILES})
 
 # Link libraries
 target_link_libraries(vintage-tactical-radio

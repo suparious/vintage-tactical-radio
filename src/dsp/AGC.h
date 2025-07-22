@@ -1,7 +1,7 @@
 #ifndef AGC_H
 #define AGC_H
 
-#include <cstdint>
+#include <cstddef>  // for size_t
 
 class AGC {
 public:

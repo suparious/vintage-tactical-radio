@@ -7,6 +7,8 @@
 #include <thread>
 #include <atomic>
 #include <functional>
+#include <cstddef>  // for size_t
+#include <cstdint>  // for uint32_t, uint8_t
 #include <rtl-sdr.h>
 
 class RTLSDRDevice {

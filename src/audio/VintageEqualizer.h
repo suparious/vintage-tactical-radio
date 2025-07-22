@@ -4,6 +4,8 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <cstddef>  // for size_t
+#include <cstdint>  // for uint32_t
 
 class VintageEqualizer {
 public:

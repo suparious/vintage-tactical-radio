@@ -5,6 +5,7 @@
 #include <vector>
 #include <cstring>
 #include <algorithm>
+#include <complex>
 
 template<typename T>
 class RingBuffer {

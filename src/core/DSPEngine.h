@@ -6,6 +6,9 @@
 #include <atomic>
 #include <functional>
 #include <complex>
+#include <cstddef>  // for size_t
+#include <cstdint>  // for uint32_t
+#include <vector>
 #include <fftw3.h>
 
 #include "RingBuffer.h"

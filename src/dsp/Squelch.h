@@ -1,7 +1,7 @@
 #ifndef SQUELCH_H
 #define SQUELCH_H
 
-#include <cstdint>
+#include <cstddef>  // for size_t
 
 class Squelch {
 public:

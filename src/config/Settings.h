@@ -6,8 +6,8 @@
 #include <map>
 #include <QVariant>
 #include <QString>
-
-class QJsonObject;
+#include <QJsonObject>
+#include <QJsonValue>
 
 class Settings {
 public:

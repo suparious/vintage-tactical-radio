@@ -305,15 +305,15 @@ QVariant Settings::jsonValueToVariant(const QJsonValue& value) const {
 }
 
 QJsonValue Settings::variantToJsonValue(const QVariant& value) const {
-    switch (value.type()) {
-        case QVariant::Bool:
+    switch (value.typeId()) {
+        case QMetaType::Bool:
             return value.toBool();
-        case QVariant::Int:
-        case QVariant::Double:
+        case QMetaType::Int:
+        case QMetaType::Double:
             return value.toDouble();
-        case QVariant::String:
+        case QMetaType::QString:
             return value.toString();
-        case QVariant::List:
+        case QMetaType::QVariantList:
             {
                 QJsonArray array;
                 QVariantList list = value.toList();
@@ -322,7 +322,7 @@ QJsonValue Settings::variantToJsonValue(const QVariant& value) const {
                 }
                 return array;
             }
-        case QVariant::Map:
+        case QMetaType::QVariantMap:
             {
                 QJsonObject obj;
                 QVariantMap map = value.toMap();

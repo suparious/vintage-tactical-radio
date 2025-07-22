@@ -2,6 +2,10 @@
 #include <cmath>
 #include <algorithm>
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 NoiseReduction::NoiseReduction(uint32_t sampleRate)
     : sampleRate_(sampleRate)
     , reductionLevel_(0.5f)

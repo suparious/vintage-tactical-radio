@@ -2,6 +2,10 @@
 #include <cmath>
 #include <algorithm>
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 // Static frequency definitions
 const std::vector<float> VintageEqualizer::modernFrequencies_ = {
     50.0f, 125.0f, 315.0f, 750.0f, 2200.0f, 6000.0f, 16000.0f

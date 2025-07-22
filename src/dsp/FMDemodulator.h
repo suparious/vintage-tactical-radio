@@ -3,6 +3,8 @@
 
 #include <complex>
 #include <vector>
+#include <cstddef>  // for size_t
+#include <cstdint>  // for uint32_t
 
 class FMDemodulator {
 public:
