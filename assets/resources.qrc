@@ -1,0 +1,25 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/">
+        <!-- Images -->
+        <file>images/radio-icon.png</file>
+        <file>images/vintage-logo.png</file>
+        
+        <!-- Themes -->
+        <file>themes/military-olive.qss</file>
+        <file>themes/navy-grey.qss</file>
+        <file>themes/night-mode.qss</file>
+        <file>themes/desert-tan.qss</file>
+        <file>themes/black-ops.qss</file>
+        
+        <!-- Sounds -->
+        <file>sounds/knob-turn.wav</file>
+        <file>sounds/switch-click.wav</file>
+        <file>sounds/button-press.wav</file>
+        <file>sounds/tuning-swoosh.wav</file>
+        <file>sounds/band-switch.wav</file>
+        <file>sounds/static-noise.wav</file>
+        <file>sounds/squelch-tail.wav</file>
+        <file>sounds/tube-warmup.wav</file>
+    </qresource>
+</RCC>
