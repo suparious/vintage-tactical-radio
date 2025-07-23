@@ -1,4 +1,7 @@
 #include "DSPEngine.h"
+#include "../decoders/CTCSSDecoder.h"
+#include "../decoders/RDSDecoder.h"
+#include "../decoders/ADSBDecoder.h"
 #include <cmath>
 #include <algorithm>
 #include <numeric>
@@ -31,7 +34,11 @@ DSPEngine::DSPEngine(uint32_t sampleRate)
     , dynamicBandwidth_(false)  // Disable by default for testing
     , audioDecimation_(sampleRate / 48000) // Decimate to 48kHz audio
     , audioSampleRate_(48000)
-    , decimationCounter_(0) {
+    , decimationCounter_(0)
+    , ctcssEnabled_(false)
+    , rdsEnabled_(false)
+    , adsbEnabled_(false)
+    , currentFrequency_(0) {
     
     // DC removal filter state
     dcI_ = 0.0f;
@@ -55,6 +62,48 @@ DSPEngine::DSPEngine(uint32_t sampleRate)
     agc_ = std::make_unique<AGC>(0.01f, 0.1f);
     squelch_ = std::make_unique<Squelch>(squelchLevel_);
     noiseReduction_ = std::make_unique<NoiseReduction>(sampleRate);
+    
+    // Initialize digital decoders
+    ctcssDecoder_ = std::make_unique<CTCSSDecoder>();
+    ctcssDecoder_->setSampleRate(audioSampleRate_);
+    
+    rdsDecoder_ = std::make_unique<RDSDecoder>();
+    rdsDecoder_->setSampleRate(sampleRate);
+    
+    adsbDecoder_ = std::make_unique<ADSBDecoder>();
+}
+
+void DSPEngine::enableCTCSS(bool enable) {
+    ctcssEnabled_ = enable;
+    if (ctcssDecoder_) {
+        if (enable) {
+            ctcssDecoder_->start();
+        } else {
+            ctcssDecoder_->stop();
+        }
+    }
+}
+
+void DSPEngine::enableRDS(bool enable) {
+    rdsEnabled_ = enable;
+    if (rdsDecoder_) {
+        if (enable) {
+            rdsDecoder_->start();
+        } else {
+            rdsDecoder_->stop();
+        }
+    }
+}
+
+void DSPEngine::enableADSB(bool enable) {
+    adsbEnabled_ = enable;
+    if (adsbDecoder_) {
+        if (enable) {
+            adsbDecoder_->start();
+        } else {
+            adsbDecoder_->stop();
+        }
+    }
 }
 
 DSPEngine::~DSPEngine() {
@@ -241,6 +290,17 @@ void DSPEngine::processingWorker() {
         
         // Process spectrum
         processSpectrum(iqWorkBuffer_.data(), blockSize);
+    
+    // Send raw IQ to ADS-B decoder if enabled and frequency is correct
+    if (adsbEnabled_ && adsbDecoder_ && currentFrequency_ >= 1089e6 && currentFrequency_ <= 1091e6) {
+        // Convert complex float back to uint8_t for ADS-B decoder
+        std::vector<uint8_t> rawData(blockSize * 2);
+        for (size_t i = 0; i < blockSize; i++) {
+            rawData[i * 2] = static_cast<uint8_t>((iqWorkBuffer_[i].real() * 127.5f) + 127.5f);
+            rawData[i * 2 + 1] = static_cast<uint8_t>((iqWorkBuffer_[i].imag() * 127.5f) + 127.5f);
+        }
+        adsbDecoder_->processRaw(rawData.data(), rawData.size());
+    }
         
         // Demodulate
         demodulate(iqWorkBuffer_.data(), blockSize, audioBuffer_.data());
@@ -293,6 +353,17 @@ void DSPEngine::processingWorker() {
                 }
                 
                 audioCallback_(decimatedAudio.data(), decimatedSamples);
+                
+                // Send audio to CTCSS decoder if enabled
+                if (ctcssEnabled_ && ctcssDecoder_) {
+                    ctcssDecoder_->processAudio(decimatedAudio.data(), decimatedSamples);
+                }
+                
+                // Send audio to RDS decoder if enabled (FM mode only)
+                if (rdsEnabled_ && rdsDecoder_ && (mode_ == FM_WIDE || mode_ == FM_NARROW)) {
+                    // RDS needs the full rate audio before decimation
+                    rdsDecoder_->processAudio(audioBuffer_.data(), blockSize);
+                }
             } else {
                 // Send silence when squelched
                 std::vector<float> silence(blockSize / audioDecimation_, 0.0f);

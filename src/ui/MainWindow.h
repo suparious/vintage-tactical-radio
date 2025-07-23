@@ -29,6 +29,7 @@ class RecordingWidget;
 class RecordingManager;
 class Scanner;
 class ScannerWidget;
+class DecoderWidget;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -91,6 +92,9 @@ private slots:
     void onScannerFrequencyChanged(double frequency);
     void updateMemoryChannelsForScanner();
     
+    // Decoder control
+    void updateDecoderState();
+    
 private:
     // Core components
     std::shared_ptr<Settings> settings_;
@@ -144,6 +148,7 @@ private:
     AntennaWidget* antennaWidget_;
     RecordingWidget* recordingWidget_;
     ScannerWidget* scannerWidget_;
+    DecoderWidget* decoderWidget_;
     std::atomic<bool> isRunning_;
     
     // Current state
@@ -163,6 +168,7 @@ private:
     void createMemoryPanel();
     void createRecordingPanel();
     void createScannerPanel();
+    void createDecoderPanel();
     void connectSignals();
     void applyTheme();
     

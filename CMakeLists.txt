@@ -48,7 +48,12 @@ set(SOURCES
     src/dsp/Squelch.cpp
     src/dsp/NoiseReduction.cpp
     src/dsp/Scanner.cpp
+    src/decoders/DigitalDecoder.cpp
+    src/decoders/CTCSSDecoder.cpp
+    src/decoders/RDSDecoder.cpp
+    src/decoders/ADSBDecoder.cpp
     src/ui/MainWindow.cpp
+    src/ui/decoders/DecoderWidget.cpp
     src/ui/VintageKnob.cpp
     src/ui/VintageMeter.cpp
     src/ui/FrequencyDial.cpp
@@ -77,7 +82,12 @@ set(HEADERS
     src/dsp/Squelch.h
     src/dsp/NoiseReduction.h
     src/dsp/Scanner.h
+    src/decoders/DigitalDecoder.h
+    src/decoders/CTCSSDecoder.h
+    src/decoders/RDSDecoder.h
+    src/decoders/ADSBDecoder.h
     src/ui/MainWindow.h
+    src/ui/decoders/DecoderWidget.h
     src/ui/VintageKnob.h
     src/ui/VintageMeter.h
     src/ui/FrequencyDial.h

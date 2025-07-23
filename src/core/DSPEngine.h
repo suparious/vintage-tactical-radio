@@ -19,6 +19,11 @@
 #include "../dsp/Squelch.h"
 #include "../dsp/NoiseReduction.h"
 
+// Forward declarations
+class CTCSSDecoder;
+class RDSDecoder;
+class ADSBDecoder;
+
 class DSPEngine {
 public:
     enum Mode {
@@ -52,6 +57,18 @@ public:
     void setSquelch(float level); // -100 to 0 dB
     void setNoiseReduction(bool enable, float level = 0.5f);
     void setNotchFilter(bool enable, float frequency, float q = 10.0f);
+    
+    // Digital decoders
+    CTCSSDecoder* getCTCSSDecoder() const { return ctcssDecoder_.get(); }
+    RDSDecoder* getRDSDecoder() const { return rdsDecoder_.get(); }
+    ADSBDecoder* getADSBDecoder() const { return adsbDecoder_.get(); }
+    
+    void enableCTCSS(bool enable);
+    void enableRDS(bool enable);
+    void enableADSB(bool enable);
+    
+    // Set current frequency for decoder configuration
+    void setCurrentFrequency(uint32_t freq) { currentFrequency_ = freq; }
     
     // Audio callback
     using AudioCallback = std::function<void(const float*, size_t)>;
@@ -107,6 +124,15 @@ private:
     std::unique_ptr<AGC> agc_;
     std::unique_ptr<Squelch> squelch_;
     std::unique_ptr<NoiseReduction> noiseReduction_;
+    
+    // Digital decoders
+    std::unique_ptr<CTCSSDecoder> ctcssDecoder_;
+    std::unique_ptr<RDSDecoder> rdsDecoder_;
+    std::unique_ptr<ADSBDecoder> adsbDecoder_;
+    bool ctcssEnabled_;
+    bool rdsEnabled_;
+    bool adsbEnabled_;
+    uint32_t currentFrequency_;
     
     // DSP settings
     bool agcEnabled_;

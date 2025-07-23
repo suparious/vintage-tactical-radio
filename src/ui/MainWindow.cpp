@@ -8,6 +8,7 @@
 #include "AntennaWidget.h"
 #include "RecordingWidget.h"
 #include "ScannerWidget.h"
+#include "decoders/DecoderWidget.h"
 #include "../config/Settings.h"
 #include "../core/RTLSDRDevice.h"
 #include "../core/DSPEngine.h"
@@ -311,6 +312,9 @@ void MainWindow::createCentralWidget() {
     
     // Scanner panel
     createScannerPanel();
+    
+    // Decoder panel
+    createDecoderPanel();
     
     // Status bar
     statusLabel_ = new QLabel(tr("Ready"));
@@ -731,6 +735,11 @@ void MainWindow::onFrequencyChanged(double frequency) {
         rtlsdr_->setCenterFrequency(frequency);
     }
     
+    // Update DSP engine frequency for decoders
+    if (dspEngine_) {
+        dspEngine_->setCurrentFrequency(frequency);
+    }
+    
     // Update band selector if frequency moved out of current band
     if (frequency >= 88e6 && frequency <= 108e6) {
         bandSelector_->setCurrentIndex(2); // FM
@@ -744,6 +753,11 @@ void MainWindow::onFrequencyChanged(double frequency) {
     // Update recording widget
     if (recordingWidget_) {
         recordingWidget_->setFrequency(frequency);
+    }
+    
+    // Update decoder widget
+    if (decoderWidget_) {
+        decoderWidget_->setFrequency(frequency);
     }
     
     // Apply optimal gain for the frequency
@@ -819,6 +833,11 @@ void MainWindow::onModeChanged(int mode) {
     // Update recording widget
     if (recordingWidget_) {
         recordingWidget_->setMode(modeSelector_->currentText());
+    }
+    
+    // Update decoder widget
+    if (decoderWidget_) {
+        decoderWidget_->setMode(modeSelector_->currentText());
     }
 }
 
@@ -1366,5 +1385,63 @@ void MainWindow::updateMemoryChannelsForScanner() {
     
     if (scannerWidget_) {
         scannerWidget_->setMemoryChannels(scannerChannels);
+    }
+}
+
+void MainWindow::createDecoderPanel() {
+    auto* decoderGroup = new QGroupBox(tr("DIGITAL DECODERS"));
+    decoderGroup->setObjectName("decoderPanel");
+    auto* decoderLayout = new QVBoxLayout(decoderGroup);
+    
+    // Create decoder widget
+    decoderWidget_ = new DecoderWidget(this);
+    
+    // Connect decoders to widget
+    decoderWidget_->setCTCSSDecoder(dspEngine_->getCTCSSDecoder());
+    decoderWidget_->setRDSDecoder(dspEngine_->getRDSDecoder());
+    decoderWidget_->setADSBDecoder(dspEngine_->getADSBDecoder());
+    
+    // Set initial frequency and mode
+    decoderWidget_->setFrequency(currentFrequency_);
+    decoderWidget_->setMode(modeSelector_->currentText());
+    
+    // Connect to DSP engine decoder enable/disable
+    connect(decoderWidget_, &DecoderWidget::ctcssEnableChanged,
+            [this](bool enabled) {
+                if (dspEngine_) {
+                    dspEngine_->enableCTCSS(enabled);
+                }
+            });
+    
+    connect(decoderWidget_, &DecoderWidget::rdsEnableChanged,
+            [this](bool enabled) {
+                if (dspEngine_) {
+                    dspEngine_->enableRDS(enabled);
+                }
+            });
+    
+    connect(decoderWidget_, &DecoderWidget::adsbEnableChanged,
+            [this](bool enabled) {
+                if (dspEngine_) {
+                    dspEngine_->enableADSB(enabled);
+                }
+            });
+    
+    decoderLayout->addWidget(decoderWidget_);
+    
+    centralWidget()->layout()->addWidget(decoderGroup);
+}
+
+void MainWindow::updateDecoderState() {
+    // Update decoder widget states based on DSP engine state
+    if (decoderWidget_ && dspEngine_) {
+        // This method can be used to synchronize decoder states
+        // For now, it's a placeholder that can be expanded as needed
+        
+        // Update frequency and mode if they've changed
+        decoderWidget_->setFrequency(currentFrequency_);
+        decoderWidget_->setMode(modeSelector_->currentText());
+        
+        // Could add more state updates here as needed
     }
 }
