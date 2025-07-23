@@ -40,6 +40,7 @@ private slots:
     void onDeviceChanged(int index);
     void onStartStop();
     void onDynamicBandwidthChanged(bool checked);
+    void onBiasTChanged(bool checked);
     
     // Frequency control
     void onFrequencyChanged(double frequency);
@@ -63,6 +64,8 @@ private slots:
     void onSampleRateChanged(int index);
     void onSampleFormatChanged(int index);
     void onResetAllClicked();
+    void onPpmChanged(int value);
+    void onRtlSampleRateChanged(int index);
     
     // DSP callbacks
     void onSignalStrengthChanged(float strength);
@@ -111,6 +114,9 @@ private:
     QComboBox* sampleRateCombo_;
     QComboBox* sampleFormatCombo_;
     QCheckBox* dynamicBandwidthCheck_;
+    QCheckBox* biasTCheck_;
+    QSpinBox* ppmSpin_;
+    QComboBox* rtlSampleRateCombo_;
     
     // EQ controls
     QComboBox* eqModeCombo_;
@@ -160,6 +166,7 @@ private:
     void updateFrequencyForBand(int band);
     void updateStatus(const QString& message);
     void updateBandwidthDisplay();
+    void applyOptimalGain(double frequency);
     void saveSettings();
     void loadSettings();
 };

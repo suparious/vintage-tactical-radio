@@ -1,0 +1,27 @@
+#!/usr/bin/make -f
+
+export DH_VERBOSE = 1
+export QT_SELECT = qt6
+
+%:
+	dh $@ --buildsystem=cmake
+
+override_dh_auto_configure:
+	dh_auto_configure -- \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX=/usr
+
+override_dh_auto_install:
+	dh_auto_install
+	# Install desktop file
+	install -D -m 644 packaging/vintage-tactical-radio.desktop \
+		debian/vintage-tactical-radio/usr/share/applications/vintage-tactical-radio.desktop
+	# Install icon
+	install -D -m 644 packaging/vintage-tactical-radio.png \
+		debian/vintage-tactical-radio/usr/share/icons/hicolor/256x256/apps/vintage-tactical-radio.png
+	# Install metainfo
+	install -D -m 644 packaging/io.github.vintage_tactical_radio.metainfo.xml \
+		debian/vintage-tactical-radio/usr/share/metainfo/io.github.vintage_tactical_radio.metainfo.xml
+
+override_dh_shlibdeps:
+	dh_shlibdeps --dpkg-shlibdeps-params=--ignore-missing-info

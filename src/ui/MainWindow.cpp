@@ -316,7 +316,7 @@ void MainWindow::createControlPanel() {
     // Gain
     auto* gainLayout = new QVBoxLayout();
     gainKnob_ = new VintageKnob(this);
-    gainKnob_->setRange(0, 46);
+    gainKnob_->setRange(0, 49.6);
     gainKnob_->setValue(25);
     gainKnob_->setLabel("RF GAIN");
     gainLayout->addWidget(gainKnob_);
@@ -414,8 +414,8 @@ void MainWindow::createSettingsPanel() {
     // Sample rate
     settingsLayout->addWidget(new QLabel(tr("Sample Rate:")), 1, 0);
     sampleRateCombo_ = new QComboBox();
-    sampleRateCombo_->addItems({"44100 Hz", "48000 Hz", "192000 Hz"});
-    sampleRateCombo_->setCurrentIndex(1); // 48000 Hz
+    sampleRateCombo_->addItems({"44.1 kHz", "48 kHz", "96 kHz", "192 kHz"});
+    sampleRateCombo_->setCurrentIndex(1); // 48 kHz
     settingsLayout->addWidget(sampleRateCombo_, 1, 1);
     
     // Sample format
@@ -434,9 +434,32 @@ void MainWindow::createSettingsPanel() {
     bandwidthLabel_ = new QLabel(tr("Bandwidth: 200 kHz"));
     settingsLayout->addWidget(bandwidthLabel_, 4, 0, 1, 2);
     
+    // Bias-T control
+    biasTCheck_ = new QCheckBox(tr("Bias-T Power"));
+    biasTCheck_->setToolTip(tr("Enable 4.5V power for active antennas"));
+    biasTCheck_->setChecked(false);
+    settingsLayout->addWidget(biasTCheck_, 5, 0, 1, 2);
+    
+    // PPM correction
+    settingsLayout->addWidget(new QLabel(tr("PPM Correction:")), 6, 0);
+    ppmSpin_ = new QSpinBox();
+    ppmSpin_->setRange(-100, 100);
+    ppmSpin_->setValue(0);
+    ppmSpin_->setSuffix(" ppm");
+    ppmSpin_->setToolTip(tr("Frequency correction in parts per million"));
+    settingsLayout->addWidget(ppmSpin_, 6, 1);
+    
+    // RTL-SDR sample rate
+    settingsLayout->addWidget(new QLabel(tr("RTL-SDR Rate:")), 7, 0);
+    rtlSampleRateCombo_ = new QComboBox();
+    rtlSampleRateCombo_->addItems({"2.048 MHz", "2.4 MHz (default)", "2.56 MHz", "3.2 MHz"});
+    rtlSampleRateCombo_->setCurrentIndex(1); // 2.4 MHz default
+    rtlSampleRateCombo_->setToolTip(tr("RTL-SDR sampling rate - 2.4 MHz recommended for stability"));
+    settingsLayout->addWidget(rtlSampleRateCombo_, 7, 1);
+    
     // Reset all button
     resetAllButton_ = new QPushButton(tr("Reset All to Defaults"));
-    settingsLayout->addWidget(resetAllButton_, 5, 0, 1, 2);
+    settingsLayout->addWidget(resetAllButton_, 8, 0, 1, 2);
     
     centralWidget()->layout()->addWidget(settingsGroup);
 }
@@ -490,6 +513,12 @@ void MainWindow::connectSignals() {
             this, &MainWindow::onResetAllClicked);
     connect(dynamicBandwidthCheck_, &QCheckBox::toggled,
             this, &MainWindow::onDynamicBandwidthChanged);
+    connect(biasTCheck_, &QCheckBox::toggled,
+            this, &MainWindow::onBiasTChanged);
+    connect(ppmSpin_, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, &MainWindow::onPpmChanged);
+    connect(rtlSampleRateCombo_, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &MainWindow::onRtlSampleRateChanged);
     
     // Fine tuning
     connect(tuningKnob_, &VintageKnob::valueChanged,
@@ -575,8 +604,22 @@ void MainWindow::startRadio() {
         
         // Configure RTL-SDR
         rtlsdr_->setCenterFrequency(currentFrequency_);
-        rtlsdr_->setSampleRate(2400000); // 2.4 MHz
+        
+        // Apply selected sample rate
+        const uint32_t rtlRates[] = {2048000, 2400000, 2560000, 3200000};
+        int rateIndex = rtlSampleRateCombo_->currentIndex();
+        if (rateIndex >= 0 && rateIndex < 4) {
+            rtlsdr_->setSampleRate(rtlRates[rateIndex]);
+            dspEngine_->setSampleRate(rtlRates[rateIndex]);
+        }
+        
         rtlsdr_->setGain(gainKnob_->value() * 10); // Convert to tenths of dB
+        rtlsdr_->setFrequencyCorrection(ppmSpin_->value()); // Apply PPM correction
+        
+        // Apply bias-T if enabled
+        if (biasTCheck_->isChecked()) {
+            rtlsdr_->setBiasT(true);
+        }
         
         // Set RTL-SDR data callback
         rtlsdr_->setDataCallback([this](const uint8_t* data, size_t length) {
@@ -669,6 +712,9 @@ void MainWindow::onFrequencyChanged(double frequency) {
     } else if (frequency >= 530e3 && frequency <= 1700e3) {
         bandSelector_->setCurrentIndex(0); // MW
     }
+    
+    // Apply optimal gain for the frequency
+    applyOptimalGain(frequency);
 }
 
 void MainWindow::onBandChanged(int band) {
@@ -791,8 +837,8 @@ void MainWindow::onAudioDeviceChanged(int index) {
 }
 
 void MainWindow::onSampleRateChanged(int index) {
-    const int rates[] = {44100, 48000, 192000};
-    if (index >= 0 && index < 3) {
+    const int rates[] = {44100, 48000, 96000, 192000};
+    if (index >= 0 && index < 4) {
         audioOutput_->setSampleRate(rates[index]);
     }
 }
@@ -948,6 +994,52 @@ void MainWindow::updateBandwidthDisplay() {
         QString text = QString("Bandwidth: %1 kHz").arg(bandwidth / 1000.0, 0, 'f', 1);
         if (bandwidthLabel_) {
             bandwidthLabel_->setText(text);
+        }
+    }
+}
+
+void MainWindow::onBiasTChanged(bool checked) {
+    if (rtlsdr_->isOpen()) {
+        rtlsdr_->setBiasT(checked);
+        updateStatus(checked ? tr("Bias-T enabled") : tr("Bias-T disabled"));
+    }
+}
+
+void MainWindow::applyOptimalGain(double frequency) {
+    // Get optimal settings for the frequency
+    auto optimalSettings = RTLSDRDevice::getOptimalSettings(frequency);
+    
+    // Convert from tenths of dB to dB for the UI
+    double optimalGainDb = optimalSettings.gain / 10.0;
+    
+    // Update gain knob
+    gainKnob_->setValue(optimalGainDb);
+    
+    // Apply gain if device is open
+    if (rtlsdr_->isOpen()) {
+        rtlsdr_->setGain(optimalSettings.gain);
+    }
+    
+    // Update status with band info
+    updateStatus(tr("Tuned to %1 - %2")
+                .arg(frequency / 1e6, 0, 'f', 3)
+                .arg(QString::fromStdString(optimalSettings.description)));
+}
+
+void MainWindow::onPpmChanged(int value) {
+    if (rtlsdr_->isOpen()) {
+        rtlsdr_->setFrequencyCorrection(value);
+        updateStatus(tr("PPM correction set to %1").arg(value));
+    }
+}
+
+void MainWindow::onRtlSampleRateChanged(int index) {
+    const uint32_t rtlRates[] = {2048000, 2400000, 2560000, 3200000};
+    if (index >= 0 && index < 4) {
+        if (rtlsdr_->isOpen()) {
+            rtlsdr_->setSampleRate(rtlRates[index]);
+            dspEngine_->setSampleRate(rtlRates[index]);
+            updateStatus(tr("RTL-SDR sample rate set to %1 MHz").arg(rtlRates[index] / 1e6, 0, 'f', 1));
         }
     }
 }

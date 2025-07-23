@@ -124,6 +124,7 @@ install(DIRECTORY assets/sounds DESTINATION share/vintage-tactical-radio)
 install(DIRECTORY assets/themes DESTINATION share/vintage-tactical-radio)
 install(FILES packaging/vintage-tactical-radio.desktop DESTINATION share/applications)
 install(FILES packaging/vintage-tactical-radio.png DESTINATION share/pixmaps)
+install(FILES packaging/io.github.vintage_tactical_radio.metainfo.xml DESTINATION share/metainfo)
 
 # CPack configuration for packaging
 set(CPACK_PACKAGE_NAME "vintage-tactical-radio")

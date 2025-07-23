@@ -1,0 +1,13 @@
+vintage-tactical-radio (1.0.0-1) unstable; urgency=medium
+
+  * Initial release
+  * Full RTL-SDR v3 support with direct sampling
+  * AM/FM broadcast reception (530 kHz - 1.7 GHz)
+  * Military-inspired vintage UI with 5 themes
+  * 7-band parametric equalizer with presets
+  * 100 memory channels with quick access
+  * Support for bias-T active antennas
+  * PPM frequency correction
+  * Optimal gain settings per frequency band
+
+ -- Vintage Radio Project <info@vintage-radio.org>  Thu, 22 Jul 2025 12:00:00 +0000

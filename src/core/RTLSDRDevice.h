@@ -45,6 +45,7 @@ public:
     
     // Bias-T control
     bool setBiasT(bool enable);
+    bool getBiasT() const { return biasTEnabled_; }
     
     // Data streaming
     using DataCallback = std::function<void(const uint8_t*, size_t)>;
@@ -66,6 +67,15 @@ public:
     
     static OptimalSettings getOptimalSettings(uint32_t frequency);
     
+    // Direct sampling modes
+    enum DirectSamplingMode {
+        DIRECT_SAMPLING_OFF = 0,
+        DIRECT_SAMPLING_I = 1,
+        DIRECT_SAMPLING_Q = 2
+    };
+    
+    DirectSamplingMode getDirectSamplingMode() const { return directSamplingMode_; }
+    
 private:
     rtlsdr_dev_t* device_;
     std::thread streamingThread_;
@@ -79,6 +89,7 @@ private:
     int ppmCorrection_;
     bool manualGain_;
     bool biasTEnabled_;
+    DirectSamplingMode directSamplingMode_;
     
     std::string lastError_;
     

@@ -1,0 +1,43 @@
+Source: vintage-tactical-radio
+Section: hamradio
+Priority: optional
+Maintainer: Vintage Radio Project <info@vintage-radio.org>
+Build-Depends: debhelper-compat (= 13),
+               cmake,
+               qt6-base-dev,
+               qt6-multimedia-dev,
+               librtlsdr-dev,
+               libfftw3-dev,
+               libusb-1.0-0-dev,
+               libpulse-dev,
+               libasound2-dev,
+               libsamplerate0-dev,
+               pkg-config
+Standards-Version: 4.6.0
+Homepage: https://github.com/vintage-tactical-radio
+
+Package: vintage-tactical-radio
+Architecture: any
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         libqt6core6,
+         libqt6gui6,
+         libqt6widgets6,
+         libqt6multimedia6,
+         librtlsdr0,
+         libfftw3-single3,
+         libusb-1.0-0,
+         libpulse0,
+         libasound2,
+         libsamplerate0
+Recommends: rtl-sdr
+Description: Vintage military-style FM radio application for RTL-SDR
+ Vintage Tactical Radio is a native Linux application that provides a
+ vintage military/tactical radio interface for RTL-SDR v3 hardware.
+ It features:
+  - AM/FM broadcast reception (530 kHz - 1.7 GHz)
+  - Military-inspired vintage UI with multiple themes
+  - 7-band parametric equalizer with presets
+  - 100 memory channels
+  - Direct sampling for HF bands
+  - Support for active antennas with bias-T

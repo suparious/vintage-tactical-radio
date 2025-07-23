@@ -14,7 +14,8 @@ RTLSDRDevice::RTLSDRDevice()
     , currentGain_(250)     // 25.0 dB
     , ppmCorrection_(0)
     , manualGain_(true)
-    , biasTEnabled_(false) {
+    , biasTEnabled_(false)
+    , directSamplingMode_(DIRECT_SAMPLING_OFF) {
 }
 
 RTLSDRDevice::~RTLSDRDevice() {
@@ -102,11 +103,17 @@ bool RTLSDRDevice::setCenterFrequency(uint32_t freq) {
         return false;
     }
     
-    // Apply optimal direct sampling mode based on frequency
+    // Automatically enable direct sampling for HF frequencies
+    DirectSamplingMode newMode = DIRECT_SAMPLING_OFF;
     if (freq < 24000000) { // Below 24 MHz, use direct sampling
-        setDirectSampling(2); // Q-branch for AM broadcast
-    } else {
-        setDirectSampling(0); // Normal mode
+        newMode = DIRECT_SAMPLING_Q; // Q-branch is preferred for AM broadcast
+    }
+    
+    // Apply direct sampling mode if it changed
+    if (newMode != directSamplingMode_) {
+        if (!setDirectSampling(newMode)) {
+            return false;
+        }
     }
     
     int result = rtlsdr_set_center_freq(device_, freq);
@@ -166,6 +173,8 @@ bool RTLSDRDevice::setDirectSampling(int mode) {
     if (!checkError(result, "setting direct sampling mode")) {
         return false;
     }
+    
+    directSamplingMode_ = static_cast<DirectSamplingMode>(mode);
     
 #ifdef HAS_SPDLOG
     const char* modeStr = (mode == 0) ? "disabled" : (mode == 1) ? "I-branch" : "Q-branch";
