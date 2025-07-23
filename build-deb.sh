@@ -55,7 +55,7 @@ Version: ${VERSION}
 Section: hamradio
 Priority: optional
 Architecture: ${ARCH}
-Depends: libqt6core6, libqt6widgets6, libqt6multimedia6, libqt6opengl6, librtlsdr0, libfftw3-single3, libc6, libgcc1, libstdc++6
+Depends: libqt6core6, libqt6widgets6, libqt6multimedia6, libqt6opengl6, libqt6svg6, librtlsdr0, libfftw3-single3, libc6, libgcc-s1, libstdc++6, libasound2, libpulse0
 Maintainer: Vintage Radio Team <contact@vintage-radio.org>
 Homepage: https://github.com/vintage-tactical-radio
 Description: RTL-SDR based vintage military radio application

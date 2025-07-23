@@ -454,3 +454,31 @@ QString VintageTheme::getBlackOpsStyle() {
         }
     )";
 }
+
+QString VintageTheme::getThemeName(Theme theme) {
+    switch (theme) {
+        case MILITARY_OLIVE: return "Military Olive";
+        case NAVY_GREY: return "Navy Grey";
+        case NIGHT_MODE: return "Night Mode";
+        case DESERT_TAN: return "Desert Tan";
+        case BLACK_OPS: return "Black Ops";
+        default: return "Military Olive";
+    }
+}
+
+VintageTheme::Theme VintageTheme::getThemeFromName(const QString& name) {
+    if (name == "Military Olive") return MILITARY_OLIVE;
+    if (name == "Navy Grey") return NAVY_GREY;
+    if (name == "Night Mode") return NIGHT_MODE;
+    if (name == "Desert Tan") return DESERT_TAN;
+    if (name == "Black Ops") return BLACK_OPS;
+    return MILITARY_OLIVE; // Default
+}
+
+QStringList VintageTheme::getThemeNames() {
+    return QStringList() << "Military Olive" 
+                        << "Navy Grey" 
+                        << "Night Mode" 
+                        << "Desert Tan" 
+                        << "Black Ops";
+}

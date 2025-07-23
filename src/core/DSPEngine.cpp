@@ -51,6 +51,7 @@ DSPEngine::DSPEngine(uint32_t sampleRate)
     // Initialize DSP components
     amDemod_ = std::make_unique<AMDemodulator>(sampleRate);
     fmDemod_ = std::make_unique<FMDemodulator>(sampleRate, bandwidth_);
+    ssbDemod_ = std::make_unique<SSBDemodulator>(sampleRate, SSBDemodulator::USB);
     agc_ = std::make_unique<AGC>(0.01f, 0.1f);
     squelch_ = std::make_unique<Squelch>(squelchLevel_);
     noiseReduction_ = std::make_unique<NoiseReduction>(sampleRate);
@@ -73,6 +74,7 @@ void DSPEngine::setSampleRate(uint32_t rate) {
     // Reinitialize components with new sample rate
     amDemod_ = std::make_unique<AMDemodulator>(rate);
     fmDemod_ = std::make_unique<FMDemodulator>(rate, bandwidth_);
+    ssbDemod_ = std::make_unique<SSBDemodulator>(rate, SSBDemodulator::USB);
     noiseReduction_ = std::make_unique<NoiseReduction>(rate);
     
 #ifdef HAS_SPDLOG
@@ -97,9 +99,17 @@ void DSPEngine::setMode(Mode mode) {
         case USB:
         case LSB:
             bandwidth_ = 2800; // 2.8 kHz
+            if (ssbDemod_) {
+                ssbDemod_->setMode(mode == USB ? SSBDemodulator::USB : SSBDemodulator::LSB);
+                ssbDemod_->setBandwidth(bandwidth_);
+            }
             break;
         case CW:
             bandwidth_ = 200; // 200 Hz
+            if (ssbDemod_) {
+                ssbDemod_->setMode(SSBDemodulator::CW);
+                ssbDemod_->setCWBandwidth(bandwidth_);
+            }
             break;
     }
     
@@ -403,8 +413,9 @@ void DSPEngine::demodulate(const std::complex<float>* input, size_t length, floa
         case USB:
         case LSB:
         case CW:
-            // TODO: Implement SSB/CW demodulation
-            std::fill(output, output + length, 0.0f);
+            if (ssbDemod_) {
+                ssbDemod_->demodulate(input, output, length);
+            }
             break;
     }
 }

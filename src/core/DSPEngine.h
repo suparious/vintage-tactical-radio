@@ -14,6 +14,7 @@
 #include "RingBuffer.h"
 #include "../dsp/AMDemodulator.h"
 #include "../dsp/FMDemodulator.h"
+#include "../dsp/SSBDemodulator.h"
 #include "../dsp/AGC.h"
 #include "../dsp/Squelch.h"
 #include "../dsp/NoiseReduction.h"
@@ -102,6 +103,7 @@ private:
     // DSP components
     std::unique_ptr<AMDemodulator> amDemod_;
     std::unique_ptr<FMDemodulator> fmDemod_;
+    std::unique_ptr<SSBDemodulator> ssbDemod_;
     std::unique_ptr<AGC> agc_;
     std::unique_ptr<Squelch> squelch_;
     std::unique_ptr<NoiseReduction> noiseReduction_;

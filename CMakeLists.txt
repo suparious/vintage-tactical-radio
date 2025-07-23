@@ -41,6 +41,7 @@ set(SOURCES
     src/audio/VintageEqualizer.cpp
     src/dsp/AMDemodulator.cpp
     src/dsp/FMDemodulator.cpp
+    src/dsp/SSBDemodulator.cpp
     src/dsp/AGC.cpp
     src/dsp/Squelch.cpp
     src/dsp/NoiseReduction.cpp
@@ -62,6 +63,7 @@ set(HEADERS
     src/audio/VintageEqualizer.h
     src/dsp/AMDemodulator.h
     src/dsp/FMDemodulator.h
+    src/dsp/SSBDemodulator.h
     src/dsp/AGC.h
     src/dsp/Squelch.h
     src/dsp/NoiseReduction.h

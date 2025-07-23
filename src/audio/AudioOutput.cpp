@@ -36,7 +36,23 @@ std::vector<AudioOutput::AudioDevice> AudioOutput::getDevices() const {
     
     for (const auto& device : audioDevices) {
         AudioDevice info;
-        info.name = device.description();
+        QString description = device.description();
+        
+        // Enhance device names for clarity
+        if (description.contains("USB", Qt::CaseInsensitive)) {
+            info.name = QString("[USB] %1").arg(description);
+        } else if (description.contains("HDMI", Qt::CaseInsensitive) || 
+                   description.contains("DisplayPort", Qt::CaseInsensitive)) {
+            info.name = QString("[HDMI/DP] %1").arg(description);
+        } else if (description.contains("PulseAudio", Qt::CaseInsensitive)) {
+            info.name = QString("[PulseAudio] %1").arg(description);
+        } else if (description.contains("ALSA", Qt::CaseInsensitive) || 
+                   device.id().contains("alsa")) {
+            info.name = QString("[ALSA] %1").arg(description);
+        } else {
+            info.name = description;
+        }
+        
         info.id = device.id();
         info.isDefault = (device.id() == defaultDevice.id());
         devices.push_back(info);
@@ -99,6 +115,9 @@ void AudioOutput::setSampleRate(int rate) {
 void AudioOutput::setSampleFormat(QAudioFormat::SampleFormat format) {
     if (format_.sampleFormat() != format) {
         format_.setSampleFormat(format);
+        
+        // Note: Qt6 natively supports Int16, Int32, and Float formats
+        // For 24-bit, we'll use Int32 internally and convert
         
         // Recreate audio sink
         bool wasPlaying = isPlaying();
@@ -240,7 +259,9 @@ void AudioOutput::convertFloatToFormat(const float* input, char* output, size_t 
             for (size_t i = 0; i < samples; i++) {
                 float sample = input[i] * volume_;
                 sample = std::max(-1.0f, std::min(1.0f, sample));
-                out32[i] = static_cast<int32_t>(sample * 2147483647.0f);
+                // For 24-bit audio, use 24-bit range in 32-bit container
+                // This provides s24le compatibility
+                out32[i] = static_cast<int32_t>(sample * 8388607.0f) << 8;
             }
             break;
         }

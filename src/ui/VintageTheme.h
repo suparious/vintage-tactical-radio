@@ -29,6 +29,11 @@ public:
     static QColor getMeterColor(Theme theme);
     static QColor getIndicatorColor(Theme theme, bool active);
     
+    // Theme name helpers
+    static QString getThemeName(Theme theme);
+    static Theme getThemeFromName(const QString& name);
+    static QStringList getThemeNames();
+    
 private:
     static QString getBaseStyleSheet();
     static QString getMilitaryOliveStyle();

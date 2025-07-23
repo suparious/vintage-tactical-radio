@@ -2,7 +2,7 @@
 
 A native Linux application that emulates a vintage military/tactical radio interface while leveraging modern RTL-SDR v3 hardware for software-defined radio reception.
 
-![Vintage Tactical Radio](assets/images/vintage-logo.png)
+![Vintage Tactical Radio](assets/images/vintage-logo.svg)
 
 ## Features
 

@@ -9,6 +9,7 @@
 #include "../core/DSPEngine.h"
 #include "../audio/AudioOutput.h"
 #include "../audio/VintageEqualizer.h"
+#include "../config/MemoryChannel.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -21,11 +22,14 @@
 #include <QMenuBar>
 #include <QMenu>
 #include <QAction>
+#include <QActionGroup>
 #include <QMessageBox>
 #include <QCloseEvent>
 #include <QTimer>
 #include <QStatusBar>
 #include <QLineEdit>
+#include <QSpinBox>
+#include <QFile>
 
 #ifdef HAS_SPDLOG
 #include <spdlog/spdlog.h>
@@ -36,7 +40,8 @@ MainWindow::MainWindow(std::shared_ptr<Settings> settings, QWidget* parent)
     , settings_(settings)
     , isRunning_(false)
     , currentFrequency_(96900000) // 96.9 MHz
-    , currentBand_(2) { // FM band
+    , currentBand_(2)  // FM band
+    , currentTheme_(0) { // Military Olive default
     
     setWindowTitle("Vintage Tactical Radio");
     setWindowIcon(QIcon(":/images/radio-icon.png"));
@@ -46,6 +51,7 @@ MainWindow::MainWindow(std::shared_ptr<Settings> settings, QWidget* parent)
     dspEngine_ = std::make_unique<DSPEngine>();
     audioOutput_ = std::make_unique<AudioOutput>(this);
     equalizer_ = std::make_unique<VintageEqualizer>(48000, VintageEqualizer::MODERN);
+    memoryManager_ = std::make_unique<MemoryChannelManager>();
     
     setupUI();
     connectSignals();
@@ -109,12 +115,49 @@ void MainWindow::createMenuBar() {
     auto* viewMenu = menuBar()->addMenu(tr("&View"));
     
     auto* themeMenu = viewMenu->addMenu(tr("&Theme"));
+    
+    // Create theme actions with keyboard shortcuts
     auto* oliveAction = new QAction(tr("Military Olive"), this);
+    oliveAction->setShortcut(QKeySequence("F1"));
+    oliveAction->setCheckable(true);
+    oliveAction->setChecked(true);
+    
     auto* navyAction = new QAction(tr("Navy Grey"), this);
+    navyAction->setShortcut(QKeySequence("F2"));
+    navyAction->setCheckable(true);
+    
     auto* nightAction = new QAction(tr("Night Mode"), this);
+    nightAction->setShortcut(QKeySequence("F3"));
+    nightAction->setCheckable(true);
+    
+    auto* desertAction = new QAction(tr("Desert Tan"), this);
+    desertAction->setShortcut(QKeySequence("F4"));
+    desertAction->setCheckable(true);
+    
+    auto* blackOpsAction = new QAction(tr("Black Ops"), this);
+    blackOpsAction->setShortcut(QKeySequence("F5"));
+    blackOpsAction->setCheckable(true);
+    
+    // Create action group for exclusive selection
+    auto* themeGroup = new QActionGroup(this);
+    themeGroup->addAction(oliveAction);
+    themeGroup->addAction(navyAction);
+    themeGroup->addAction(nightAction);
+    themeGroup->addAction(desertAction);
+    themeGroup->addAction(blackOpsAction);
+    
     themeMenu->addAction(oliveAction);
     themeMenu->addAction(navyAction);
     themeMenu->addAction(nightAction);
+    themeMenu->addAction(desertAction);
+    themeMenu->addAction(blackOpsAction);
+    
+    // Connect theme actions
+    connect(oliveAction, &QAction::triggered, [this]() { onThemeChanged(VintageTheme::MILITARY_OLIVE); });
+    connect(navyAction, &QAction::triggered, [this]() { onThemeChanged(VintageTheme::NAVY_GREY); });
+    connect(nightAction, &QAction::triggered, [this]() { onThemeChanged(VintageTheme::NIGHT_MODE); });
+    connect(desertAction, &QAction::triggered, [this]() { onThemeChanged(VintageTheme::DESERT_TAN); });
+    connect(blackOpsAction, &QAction::triggered, [this]() { onThemeChanged(VintageTheme::BLACK_OPS); });
     
     auto* helpMenu = menuBar()->addMenu(tr("&Help"));
     auto* aboutAction = new QAction(tr("&About"), this);
@@ -214,8 +257,8 @@ void MainWindow::createCentralWidget() {
     auto* modeGroup = new QGroupBox(tr("MODE SELECT"));
     auto* modeGroupLayout = new QVBoxLayout(modeGroup);
     modeSelector_ = new QComboBox();
-    modeSelector_->addItems({"AM", "FM", "SSB", "CW"});
-    modeSelector_->setCurrentIndex(1); // FM
+    modeSelector_->addItems({"AM", "FM-Narrow", "FM-Wide", "USB", "LSB", "CW"});
+    modeSelector_->setCurrentIndex(2); // FM-Wide
     modeGroupLayout->addWidget(modeSelector_);
     modeLayout->addWidget(modeGroup);
     
@@ -238,6 +281,9 @@ void MainWindow::createCentralWidget() {
     
     // Settings panel
     createSettingsPanel();
+    
+    // Memory channel panel
+    createMemoryPanel();
     
     // Status bar
     statusLabel_ = new QLabel(tr("Ready"));
@@ -270,7 +316,7 @@ void MainWindow::createControlPanel() {
     // Gain
     auto* gainLayout = new QVBoxLayout();
     gainKnob_ = new VintageKnob(this);
-    gainKnob_->setRange(0, 49);
+    gainKnob_->setRange(0, 46);
     gainKnob_->setValue(25);
     gainKnob_->setLabel("RF GAIN");
     gainLayout->addWidget(gainKnob_);
@@ -325,6 +371,15 @@ void MainWindow::createEQPanel() {
     eqControlLayout->addStretch();
     eqMainLayout->addLayout(eqControlLayout);
     
+    // Add gain range selector
+    auto* gainRangeLayout = new QHBoxLayout();
+    gainRangeLayout->addWidget(new QLabel(tr("Gain Range:")));
+    eqGainRangeCombo_ = new QComboBox();
+    eqGainRangeCombo_->addItems({"+/-12dB", "+/-18dB", "+/-24dB", "+/-30dB"});
+    gainRangeLayout->addWidget(eqGainRangeCombo_);
+    gainRangeLayout->addStretch();
+    eqMainLayout->addLayout(gainRangeLayout);
+    
     // EQ knobs
     auto* eqKnobLayout = new QHBoxLayout();
     
@@ -366,7 +421,7 @@ void MainWindow::createSettingsPanel() {
     // Sample format
     settingsLayout->addWidget(new QLabel(tr("Sample Format:")), 2, 0);
     sampleFormatCombo_ = new QComboBox();
-    sampleFormatCombo_->addItems({"16-bit", "24-bit"});
+    sampleFormatCombo_->addItems({"s16le (16-bit)", "s24le (24-bit)"});
     settingsLayout->addWidget(sampleFormatCombo_, 2, 1);
     
     // Dynamic bandwidth
@@ -414,6 +469,8 @@ void MainWindow::connectSignals() {
             this, &MainWindow::onEQModeChanged);
     connect(eqPresetCombo_, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &MainWindow::onEQPresetChanged);
+    connect(eqGainRangeCombo_, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &MainWindow::onEQGainRangeChanged);
     connect(resetEQButton_, &QPushButton::clicked,
             this, &MainWindow::onEQResetClicked);
     
@@ -438,12 +495,30 @@ void MainWindow::connectSignals() {
     connect(tuningKnob_, &VintageKnob::valueChanged,
             [this](double value) {
                 double offset = value * 1000; // +/- 100 kHz
-                onFrequencyChanged(currentFrequency_ + offset);
+                if (rtlsdr_->isOpen()) {
+                    rtlsdr_->setCenterFrequency(currentFrequency_ + offset);
+                }
             });
+    
+    // Memory channel controls
+    connect(memoryStoreButton_, &QPushButton::clicked,
+            this, &MainWindow::onMemoryStore);
+    connect(memoryRecallButton_, &QPushButton::clicked,
+            this, &MainWindow::onMemoryRecall);
+    connect(memoryClearButton_, &QPushButton::clicked,
+            this, &MainWindow::onMemoryClear);
+    connect(memoryBankCombo_, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &MainWindow::onMemoryChannelChanged);
+    connect(memoryChannelSpin_, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, &MainWindow::onMemoryChannelChanged);
+    connect(quickChannelCombo_, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &MainWindow::onQuickChannelSelected);
 }
 
 void MainWindow::applyTheme() {
-    VintageTheme::applyTheme(this, VintageTheme::MILITARY_OLIVE);
+    // Load saved theme or use default
+    currentTheme_ = settings_->getValue("theme", 0).toInt();
+    VintageTheme::applyTheme(this, static_cast<VintageTheme::Theme>(currentTheme_));
 }
 
 void MainWindow::initializeDevices() {
@@ -579,6 +654,11 @@ void MainWindow::onFrequencyChanged(double frequency) {
     currentFrequency_ = frequency;
     frequencyDial_->setFrequency(frequency);
     
+    // Reset fine tuning when main frequency changes
+    if (tuningKnob_->value() != 0) {
+        tuningKnob_->setValue(0);
+    }
+    
     if (rtlsdr_->isOpen()) {
         rtlsdr_->setCenterFrequency(frequency);
     }
@@ -680,6 +760,27 @@ void MainWindow::onEQResetClicked() {
     eqPresetCombo_->setCurrentIndex(0); // Flat preset
 }
 
+void MainWindow::onEQGainRangeChanged(int index) {
+    const float gainRanges[] = {12.0f, 18.0f, 24.0f, 30.0f};
+    if (index >= 0 && index < 4) {
+        float maxGain = gainRanges[index];
+        equalizer_->setMaxGain(maxGain);
+        
+        // Update all EQ knob ranges
+        for (int i = 0; i < 7; i++) {
+            float currentValue = eqKnobs_[i]->value();
+            eqKnobs_[i]->setRange(-maxGain, maxGain);
+            // Preserve current value if within new range
+            if (currentValue >= -maxGain && currentValue <= maxGain) {
+                eqKnobs_[i]->setValue(currentValue);
+            } else {
+                // Clamp to new range
+                eqKnobs_[i]->setValue(std::max(-maxGain, std::min(maxGain, (float)currentValue)));
+            }
+        }
+    }
+}
+
 void MainWindow::onAudioDeviceChanged(int index) {
     if (index >= 0 && index < audioDeviceCombo_->count()) {
         auto devices = audioOutput_->getDevices();
@@ -721,7 +822,7 @@ void MainWindow::onResetAllClicked() {
         eqModeCombo_->setCurrentIndex(0);
         
         // Reset mode and band
-        modeSelector_->setCurrentIndex(1); // FM
+        modeSelector_->setCurrentIndex(2); // FM-Wide
         bandSelector_->setCurrentIndex(2); // FM band
         
         // Reset audio settings
@@ -763,12 +864,17 @@ void MainWindow::saveSettings() {
     settings_->setValue("gain", gainKnob_->value());
     settings_->setValue("eq_mode", eqModeCombo_->currentIndex());
     settings_->setValue("eq_preset", eqPresetCombo_->currentIndex());
+    settings_->setValue("theme", currentTheme_);
     
     for (int i = 0; i < 7; i++) {
         settings_->setValue(QString("eq_band_%1").arg(i), eqKnobs_[i]->value());
     }
     
     settings_->setValue("dynamic_bandwidth", dynamicBandwidthCheck_->isChecked());
+    
+    // Save memory channels
+    QString memoryFile = settings_->getConfigPath() + "/memory_channels.json";
+    memoryManager_->saveToFile(memoryFile);
     
     settings_->save();
 }
@@ -777,7 +883,7 @@ void MainWindow::loadSettings() {
     currentFrequency_ = settings_->getValue("frequency", 96900000.0).toDouble();
     frequencyDial_->setFrequency(currentFrequency_);
     
-    modeSelector_->setCurrentIndex(settings_->getValue("mode", 1).toInt());
+    modeSelector_->setCurrentIndex(settings_->getValue("mode", 2).toInt());
     bandSelector_->setCurrentIndex(settings_->getValue("band", 2).toInt());
     volumeKnob_->setValue(settings_->getValue("volume", 75.0).toDouble());
     squelchKnob_->setValue(settings_->getValue("squelch", -20.0).toDouble());
@@ -792,6 +898,12 @@ void MainWindow::loadSettings() {
     }
     
     dynamicBandwidthCheck_->setChecked(settings_->getValue("dynamic_bandwidth", true).toBool());
+    
+    // Load memory channels
+    QString memoryFile = settings_->getConfigPath() + "/memory_channels.json";
+    if (QFile::exists(memoryFile)) {
+        memoryManager_->loadFromFile(memoryFile);
+    }
 }
 
 void MainWindow::closeEvent(QCloseEvent* event) {
@@ -837,5 +949,170 @@ void MainWindow::updateBandwidthDisplay() {
         if (bandwidthLabel_) {
             bandwidthLabel_->setText(text);
         }
+    }
+}
+
+void MainWindow::createMemoryPanel() {
+    auto* memoryGroup = new QGroupBox(tr("MEMORY CHANNELS"));
+    memoryGroup->setObjectName("memoryPanel");
+    auto* memoryLayout = new QGridLayout(memoryGroup);
+    
+    // Quick channels
+    memoryLayout->addWidget(new QLabel(tr("Quick Access:")), 0, 0);
+    quickChannelCombo_ = new QComboBox();
+    quickChannelCombo_->addItem(tr("-- Select Quick Channel --"));
+    auto quickChannels = memoryManager_->getQuickChannels();
+    for (const auto& ch : quickChannels) {
+        quickChannelCombo_->addItem(QString("%1 - %2 MHz")
+            .arg(ch.name())
+            .arg(ch.frequency() / 1e6, 0, 'f', 3));
+    }
+    memoryLayout->addWidget(quickChannelCombo_, 0, 1, 1, 2);
+    
+    // Memory bank/channel selection
+    memoryLayout->addWidget(new QLabel(tr("Bank:")), 1, 0);
+    memoryBankCombo_ = new QComboBox();
+    for (int i = 0; i < MemoryChannelManager::NUM_BANKS; i++) {
+        memoryBankCombo_->addItem(QString("Bank %1").arg(i));
+    }
+    memoryLayout->addWidget(memoryBankCombo_, 1, 1);
+    
+    memoryLayout->addWidget(new QLabel(tr("Channel:")), 2, 0);
+    memoryChannelSpin_ = new QSpinBox();
+    memoryChannelSpin_->setRange(0, MemoryChannelManager::CHANNELS_PER_BANK - 1);
+    memoryChannelSpin_->setWrapping(true);
+    memoryLayout->addWidget(memoryChannelSpin_, 2, 1);
+    
+    // Memory buttons
+    memoryStoreButton_ = new QPushButton(tr("STORE"));
+    memoryStoreButton_->setObjectName("memoryButton");
+    memoryStoreButton_->setToolTip(tr("Store current frequency to selected memory channel"));
+    memoryLayout->addWidget(memoryStoreButton_, 1, 2);
+    
+    memoryRecallButton_ = new QPushButton(tr("RECALL"));
+    memoryRecallButton_->setObjectName("memoryButton");
+    memoryRecallButton_->setToolTip(tr("Recall frequency from selected memory channel"));
+    memoryLayout->addWidget(memoryRecallButton_, 2, 2);
+    
+    memoryClearButton_ = new QPushButton(tr("CLEAR"));
+    memoryClearButton_->setObjectName("memoryButton");
+    memoryClearButton_->setToolTip(tr("Clear selected memory channel"));
+    memoryLayout->addWidget(memoryClearButton_, 3, 2);
+    
+    // Memory info display
+    auto* memoryInfoLabel = new QLabel(tr("Memory: Empty"));
+    memoryInfoLabel->setObjectName("memoryInfo");
+    memoryLayout->addWidget(memoryInfoLabel, 3, 0, 1, 2);
+    
+    centralWidget()->layout()->addWidget(memoryGroup);
+}
+
+void MainWindow::onThemeChanged(int theme) {
+    currentTheme_ = theme;
+    VintageTheme::applyTheme(this, static_cast<VintageTheme::Theme>(theme));
+    
+    // Save theme preference
+    settings_->setValue("theme", theme);
+    
+    // Update status
+    updateStatus(tr("Theme changed to %1").arg(VintageTheme::getThemeName(static_cast<VintageTheme::Theme>(theme))));
+}
+
+void MainWindow::onMemoryStore() {
+    int bank = memoryBankCombo_->currentIndex();
+    int channel = memoryChannelSpin_->value();
+    int index = bank * MemoryChannelManager::CHANNELS_PER_BANK + channel;
+    
+    // Create memory channel with current settings
+    MemoryChannel mem(index, currentFrequency_);
+    mem.setName(QString("CH %1-%2").arg(bank).arg(channel));
+    mem.setMode(modeSelector_->currentText());
+    mem.setBandwidth(dspEngine_->getBandwidth());
+    mem.setGain(gainKnob_->value());
+    mem.setSquelch(squelchKnob_->value());
+    
+    memoryManager_->setChannel(index, mem);
+    
+    updateStatus(tr("Stored %1 MHz to memory %2-%3")
+                .arg(currentFrequency_ / 1e6, 0, 'f', 3)
+                .arg(bank)
+                .arg(channel));
+    
+    onMemoryChannelChanged();
+}
+
+void MainWindow::onMemoryRecall() {
+    int bank = memoryBankCombo_->currentIndex();
+    int channel = memoryChannelSpin_->value();
+    int index = bank * MemoryChannelManager::CHANNELS_PER_BANK + channel;
+    
+    MemoryChannel mem = memoryManager_->getChannel(index);
+    if (mem.isEmpty()) {
+        updateStatus(tr("Memory %1-%2 is empty").arg(bank).arg(channel));
+        return;
+    }
+    
+    // Recall all settings
+    onFrequencyChanged(mem.frequency());
+    
+    // Find and set mode
+    int modeIndex = modeSelector_->findText(mem.mode());
+    if (modeIndex >= 0) {
+        modeSelector_->setCurrentIndex(modeIndex);
+    }
+    
+    gainKnob_->setValue(mem.gain());
+    squelchKnob_->setValue(mem.squelch());
+    
+    updateStatus(tr("Recalled %1 from memory %2-%3")
+                .arg(mem.name())
+                .arg(bank)
+                .arg(channel));
+}
+
+void MainWindow::onMemoryClear() {
+    int bank = memoryBankCombo_->currentIndex();
+    int channel = memoryChannelSpin_->value();
+    int index = bank * MemoryChannelManager::CHANNELS_PER_BANK + channel;
+    
+    memoryManager_->clearChannel(index);
+    
+    updateStatus(tr("Cleared memory %1-%2").arg(bank).arg(channel));
+    onMemoryChannelChanged();
+}
+
+void MainWindow::onMemoryChannelChanged() {
+    int bank = memoryBankCombo_->currentIndex();
+    int channel = memoryChannelSpin_->value();
+    int index = bank * MemoryChannelManager::CHANNELS_PER_BANK + channel;
+    
+    MemoryChannel mem = memoryManager_->getChannel(index);
+    
+    // Update memory info label
+    auto* memoryInfoLabel = findChild<QLabel*>("memoryInfo");
+    if (memoryInfoLabel) {
+        if (mem.isEmpty()) {
+            memoryInfoLabel->setText(tr("Memory %1-%2: Empty").arg(bank).arg(channel));
+        } else {
+            memoryInfoLabel->setText(tr("Memory %1-%2: %3 - %4 MHz")
+                                   .arg(bank)
+                                   .arg(channel)
+                                   .arg(mem.name())
+                                   .arg(mem.frequency() / 1e6, 0, 'f', 3));
+        }
+    }
+}
+
+void MainWindow::onQuickChannelSelected(int index) {
+    if (index <= 0) return; // Skip the "-- Select --" item
+    
+    auto quickChannels = memoryManager_->getQuickChannels();
+    if (index - 1 < static_cast<int>(quickChannels.size())) {
+        const auto& ch = quickChannels[index - 1];
+        onFrequencyChanged(ch.frequency());
+        updateStatus(tr("Tuned to %1").arg(ch.name()));
+        
+        // Reset combo box to show "-- Select --"
+        quickChannelCombo_->setCurrentIndex(0);
     }
 }

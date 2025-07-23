@@ -22,6 +22,8 @@ class VintageKnob;
 class VintageMeter;
 class FrequencyDial;
 class SpectrumDisplay;
+class MemoryChannelManager;
+class QSpinBox;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -54,6 +56,7 @@ private slots:
     void onEQPresetChanged(int preset);
     void onEQBandChanged(int band, double value);
     void onEQResetClicked();
+    void onEQGainRangeChanged(int index);
     
     // Settings
     void onAudioDeviceChanged(int index);
@@ -65,6 +68,16 @@ private slots:
     void onSignalStrengthChanged(float strength);
     void onSpectrumData(const float* data, size_t length);
     
+    // Theme control
+    void onThemeChanged(int theme);
+    
+    // Memory channel control
+    void onMemoryStore();
+    void onMemoryRecall();
+    void onMemoryClear();
+    void onMemoryChannelChanged();
+    void onQuickChannelSelected(int index);
+    
 private:
     // Core components
     std::shared_ptr<Settings> settings_;
@@ -72,6 +85,7 @@ private:
     std::unique_ptr<DSPEngine> dspEngine_;
     std::unique_ptr<AudioOutput> audioOutput_;
     std::unique_ptr<VintageEqualizer> equalizer_;
+    std::unique_ptr<MemoryChannelManager> memoryManager_;
     
     // UI components
     FrequencyDial* frequencyDial_;
@@ -101,11 +115,20 @@ private:
     // EQ controls
     QComboBox* eqModeCombo_;
     QComboBox* eqPresetCombo_;
+    QComboBox* eqGainRangeCombo_;
     
     // Buttons
     QPushButton* startStopButton_;
     QPushButton* resetEQButton_;
     QPushButton* resetAllButton_;
+    
+    // Memory channel controls
+    QComboBox* memoryBankCombo_;
+    QSpinBox* memoryChannelSpin_;
+    QPushButton* memoryStoreButton_;
+    QPushButton* memoryRecallButton_;
+    QPushButton* memoryClearButton_;
+    QComboBox* quickChannelCombo_;
     
     // Status
     QLabel* statusLabel_;
@@ -115,6 +138,7 @@ private:
     // Current state
     double currentFrequency_;
     int currentBand_;
+    int currentTheme_;
     
     // Setup methods
     void setupUI();
@@ -123,6 +147,7 @@ private:
     void createControlPanel();
     void createEQPanel();
     void createSettingsPanel();
+    void createMemoryPanel();
     void connectSignals();
     void applyTheme();
     
