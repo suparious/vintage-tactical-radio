@@ -228,9 +228,15 @@ void ScannerWidget::onStepSizeChanged(int index) {
     const double stepSizes[] = {5e3, 6.25e3, 10e3, 12.5e3, 25e3, 50e3, 100e3, 200e3};
     
     if (index >= 0 && index < 8) {
+        // Update only the step size, keeping other parameters at their defaults
         Scanner::ScanParameters params;
-        scanner_->setScanParameters(params); // Get current
+        params.startFreq = 88e6;     // 88 MHz
+        params.endFreq = 108e6;      // 108 MHz
         params.stepSize = stepSizes[index];
+        params.dwellTimeMs = 2000;   // 2 seconds
+        params.resumeTimeMs = 3000;  // 3 seconds
+        params.signalThreshold = thresholdSlider_->value();
+        params.scanSpeedHz = speedSlider_->value();
         scanner_->setScanParameters(params);
         emit scanParametersChanged();
     }
@@ -240,8 +246,19 @@ void ScannerWidget::onSpeedChanged(int value) {
     speedLabel_->setText(QString("%1 ch/s").arg(value));
     
     if (scanner_) {
+        // Update only the scan speed, keeping other parameters at their defaults
         Scanner::ScanParameters params;
-        scanner_->setScanParameters(params); // Get current
+        params.startFreq = 88e6;     // 88 MHz
+        params.endFreq = 108e6;      // 108 MHz
+        params.stepSize = 100e3;     // Default 100 kHz
+        const double stepSizes[] = {5e3, 6.25e3, 10e3, 12.5e3, 25e3, 50e3, 100e3, 200e3};
+        int stepIndex = stepCombo_->currentIndex();
+        if (stepIndex >= 0 && stepIndex < 8) {
+            params.stepSize = stepSizes[stepIndex];
+        }
+        params.dwellTimeMs = 2000;   // 2 seconds
+        params.resumeTimeMs = 3000;  // 3 seconds
+        params.signalThreshold = thresholdSlider_->value();
         params.scanSpeedHz = value;
         scanner_->setScanParameters(params);
         emit scanParametersChanged();
@@ -252,9 +269,20 @@ void ScannerWidget::onThresholdChanged(int value) {
     thresholdLabel_->setText(QString("%1 dB").arg(value));
     
     if (scanner_) {
+        // Update only the threshold, keeping other parameters at their defaults
         Scanner::ScanParameters params;
-        scanner_->setScanParameters(params); // Get current
+        params.startFreq = 88e6;     // 88 MHz
+        params.endFreq = 108e6;      // 108 MHz
+        params.stepSize = 100e3;     // Default 100 kHz
+        const double stepSizes[] = {5e3, 6.25e3, 10e3, 12.5e3, 25e3, 50e3, 100e3, 200e3};
+        int stepIndex = stepCombo_->currentIndex();
+        if (stepIndex >= 0 && stepIndex < 8) {
+            params.stepSize = stepSizes[stepIndex];
+        }
+        params.dwellTimeMs = 2000;   // 2 seconds
+        params.resumeTimeMs = 3000;  // 3 seconds
         params.signalThreshold = value;
+        params.scanSpeedHz = speedSlider_->value();
         scanner_->setScanParameters(params);
         emit scanParametersChanged();
     }
