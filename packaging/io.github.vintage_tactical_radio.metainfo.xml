@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.vintage_tactical_radio</id>
+  
+  <name>Vintage Tactical Radio</name>
+  <summary>Military-style software defined radio receiver</summary>
+  
+  <metadata_license>FSFAP</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  
+  <description>
+    <p>
+      Vintage Tactical Radio is a native Linux application that emulates a vintage 
+      military/tactical radio interface while leveraging modern RTL-SDR v3 hardware 
+      for software-defined radio reception.
+    </p>
+    <p>
+      Inspired by Cold War-era tactical radios like the AN/PRC-77, this application 
+      provides an authentic military radio experience with modern SDR capabilities.
+    </p>
+    <p>Features include:</p>
+    <ul>
+      <li>Wide frequency coverage from 500 kHz to 1.7 GHz</li>
+      <li>Multiple demodulation modes: AM, FM (narrow/wide), SSB, CW</li>
+      <li>7-band parametric equalizer with vintage and modern modes</li>
+      <li>Real-time spectrum display with phosphor-style waterfall</li>
+      <li>1000 memory channels organized in 10 banks</li>
+      <li>Multiple authentic military themes</li>
+      <li>Professional audio support (ALSA, PulseAudio, JACK)</li>
+    </ul>
+  </description>
+  
+  <launchable type="desktop-id">io.github.vintage_tactical_radio.desktop</launchable>
+  
+  <screenshots>
+    <screenshot type="default">
+      <caption>Main interface with military olive theme</caption>
+      <image>https://raw.githubusercontent.com/vintage-tactical-radio/screenshots/main/screenshot1.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Spectrum display and controls</caption>
+      <image>https://raw.githubusercontent.com/vintage-tactical-radio/screenshots/main/screenshot2.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Night mode theme</caption>
+      <image>https://raw.githubusercontent.com/vintage-tactical-radio/screenshots/main/screenshot3.png</image>
+    </screenshot>
+  </screenshots>
+  
+  <url type="homepage">https://github.com/vintage-tactical-radio</url>
+  <url type="bugtracker">https://github.com/vintage-tactical-radio/issues</url>
+  <url type="help">https://github.com/vintage-tactical-radio/wiki</url>
+  
+  <developer_name>Vintage Radio Project</developer_name>
+  
+  <provides>
+    <binary>vintage-tactical-radio</binary>
+  </provides>
+  
+  <releases>
+    <release version="1.0.0" date="2025-01-01">
+      <description>
+        <p>Initial release of Vintage Tactical Radio</p>
+        <ul>
+          <li>RTL-SDR v3 support with automatic device detection</li>
+          <li>AM/FM/SSB/CW demodulation modes</li>
+          <li>7-band parametric equalizer</li>
+          <li>Real-time spectrum and waterfall display</li>
+          <li>Five authentic military themes</li>
+          <li>Memory channel management</li>
+        </ul>
+      </description>
+    </release>
+  </releases>
+  
+  <content_rating type="oars-1.1" />
+  
+  <categories>
+    <category>AudioVideo</category>
+    <category>Audio</category>
+    <category>HamRadio</category>
+  </categories>
+  
+  <keywords>
+    <keyword>radio</keyword>
+    <keyword>sdr</keyword>
+    <keyword>rtl-sdr</keyword>
+    <keyword>ham</keyword>
+    <keyword>amateur</keyword>
+    <keyword>scanner</keyword>
+    <keyword>receiver</keyword>
+    <keyword>tactical</keyword>
+    <keyword>military</keyword>
+    <keyword>vintage</keyword>
+  </keywords>
+  
+  <requires>
+    <hardware>usb:v0BDAp2838</hardware>
+  </requires>
+  
+  <recommends>
+    <control>pointing</control>
+    <control>keyboard</control>
+  </recommends>
+</component>

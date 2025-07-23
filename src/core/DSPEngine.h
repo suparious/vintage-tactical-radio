@@ -42,6 +42,10 @@ public:
     void setBandwidth(uint32_t bandwidth);
     uint32_t getBandwidth() const { return bandwidth_; }
     
+    // Dynamic bandwidth for FM based on signal strength
+    void setDynamicBandwidth(bool enable) { dynamicBandwidth_ = enable; }
+    bool getDynamicBandwidth() const { return dynamicBandwidth_; }
+    
     // DSP Controls
     void setAGC(bool enable, float attack = 0.01f, float decay = 0.1f);
     void setSquelch(float level); // -100 to 0 dB
@@ -113,6 +117,7 @@ private:
     // Signal measurements
     std::atomic<float> signalStrength_;
     std::atomic<bool> squelched_;
+    bool dynamicBandwidth_;
     
     // Callbacks
     AudioCallback audioCallback_;
@@ -130,6 +135,11 @@ private:
     uint32_t audioDecimation_;
     uint32_t audioSampleRate_;
     size_t decimationCounter_;
+    
+    // DC removal filter
+    float dcI_;
+    float dcQ_;
+    float dcAlpha_;
 };
 
 #endif // DSPENGINE_H

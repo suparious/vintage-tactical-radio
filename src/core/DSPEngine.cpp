@@ -15,22 +15,28 @@
 
 DSPEngine::DSPEngine(uint32_t sampleRate)
     : sampleRate_(sampleRate)
-    , mode_(FM_WIDE)
+    , mode_(FM_WIDE)  // Default to FM_WIDE
     , bandwidth_(200000) // 200 kHz for FM
     , running_(false)
     , iqBuffer_(sampleRate * 2) // 2 seconds of buffer
     , fftSize_(2048)
-    , agcEnabled_(true)
+    , agcEnabled_(false)  // Disable AGC by default for FM
     , squelchLevel_(-20.0f)
     , noiseReductionEnabled_(false)
     , notchEnabled_(false)
     , notchFreq_(0.0f)
     , notchQ_(10.0f)
     , signalStrength_(-100.0f)
-    , squelched_(true)
+    , squelched_(false)  // Start with squelch open
+    , dynamicBandwidth_(false)  // Disable by default for testing
     , audioDecimation_(sampleRate / 48000) // Decimate to 48kHz audio
     , audioSampleRate_(48000)
     , decimationCounter_(0) {
+    
+    // DC removal filter state
+    dcI_ = 0.0f;
+    dcQ_ = 0.0f;
+    dcAlpha_ = 0.995f;  // DC removal filter coefficient
     
     // Allocate buffers
     iqWorkBuffer_.resize(16384);
@@ -86,7 +92,7 @@ void DSPEngine::setMode(Mode mode) {
             bandwidth_ = 25000; // 25 kHz
             break;
         case FM_WIDE:
-            bandwidth_ = 200000; // 200 kHz
+            bandwidth_ = 220000; // 220 kHz for stereo FM broadcast
             break;
         case USB:
         case LSB:
@@ -198,6 +204,31 @@ void DSPEngine::processingWorker() {
         // Calculate signal strength
         calculateSignalStrength(iqWorkBuffer_.data(), blockSize);
         
+        // Adjust bandwidth dynamically for FM if enabled
+        if (dynamicBandwidth_ && mode_ == FM_WIDE) {
+            float strength = signalStrength_.load();
+            // Strong signal (> -40 dB): use full 220 kHz for stereo
+            // Weak signal (< -60 dB): reduce to 200 kHz
+            // Very weak (< -70 dB): reduce to 180 kHz for better SNR
+            uint32_t newBandwidth;
+            if (strength > -40.0f) {
+                newBandwidth = 220000; // Full stereo bandwidth
+            } else if (strength > -60.0f) {
+                newBandwidth = 200000; // Standard bandwidth
+            } else if (strength > -70.0f) {
+                newBandwidth = 180000; // Reduced bandwidth
+            } else {
+                newBandwidth = 150000; // Mono-compatible bandwidth
+            }
+            
+            if (newBandwidth != bandwidth_) {
+                bandwidth_ = newBandwidth;
+                if (fmDemod_) {
+                    fmDemod_->setBandwidth(bandwidth_);
+                }
+            }
+        }
+        
         // Process spectrum
         processSpectrum(iqWorkBuffer_.data(), blockSize);
         
@@ -220,18 +251,43 @@ void DSPEngine::processingWorker() {
         }
         
         // Decimate audio and send to callback
-        if (audioCallback_ && !squelched_) {
-            size_t decimatedSamples = 0;
-            std::vector<float> decimatedAudio(blockSize / audioDecimation_);
-            
-            for (size_t i = 0; i < blockSize; i++) {
-                if (decimationCounter_ == 0) {
-                    decimatedAudio[decimatedSamples++] = audioBuffer_[i];
+        if (audioCallback_) {
+            if (!squelched_) {
+                // Use a better decimation filter
+                size_t decimatedSamples = 0;
+                std::vector<float> decimatedAudio(blockSize / audioDecimation_ + 1);
+                
+                // Simple low-pass filter coefficients for anti-aliasing
+                // This is a 5-tap FIR filter designed for cutoff at Nyquist/2 of output rate
+                static const float lpf[] = {0.0625f, 0.25f, 0.375f, 0.25f, 0.0625f};
+                static std::vector<float> filterState(5, 0.0f);
+                
+                for (size_t i = 0; i < blockSize; i++) {
+                    // Shift filter state and add new sample
+                    for (int j = 4; j > 0; j--) {
+                        filterState[j] = filterState[j-1];
+                    }
+                    filterState[0] = audioBuffer_[i];
+                    
+                    // Apply filter
+                    float filtered = 0.0f;
+                    for (int j = 0; j < 5; j++) {
+                        filtered += lpf[j] * filterState[j];
+                    }
+                    
+                    // Decimate
+                    if (decimationCounter_ == 0) {
+                        decimatedAudio[decimatedSamples++] = filtered;
+                    }
+                    decimationCounter_ = (decimationCounter_ + 1) % audioDecimation_;
                 }
-                decimationCounter_ = (decimationCounter_ + 1) % audioDecimation_;
+                
+                audioCallback_(decimatedAudio.data(), decimatedSamples);
+            } else {
+                // Send silence when squelched
+                std::vector<float> silence(blockSize / audioDecimation_, 0.0f);
+                audioCallback_(silence.data(), silence.size());
             }
-            
-            audioCallback_(decimatedAudio.data(), decimatedSamples);
         }
         
         // Send signal strength
@@ -242,10 +298,20 @@ void DSPEngine::processingWorker() {
 }
 
 void DSPEngine::convertIQData(const uint8_t* data, size_t length, std::complex<float>* output) {
-    // Convert 8-bit unsigned to float [-1, 1]
+    // Convert 8-bit unsigned to float [-1, 1] with DC removal
     for (size_t i = 0; i < length / 2; i++) {
+        // Convert to float centered at 0
         float i_sample = (data[i * 2] - 127.5f) / 127.5f;
         float q_sample = (data[i * 2 + 1] - 127.5f) / 127.5f;
+        
+        // Update DC estimates
+        dcI_ = dcAlpha_ * dcI_ + (1.0f - dcAlpha_) * i_sample;
+        dcQ_ = dcAlpha_ * dcQ_ + (1.0f - dcAlpha_) * q_sample;
+        
+        // Remove DC
+        i_sample -= dcI_;
+        q_sample -= dcQ_;
+        
         output[i] = std::complex<float>(i_sample, q_sample);
     }
 }

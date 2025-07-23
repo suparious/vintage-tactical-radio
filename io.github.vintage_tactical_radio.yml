@@ -1,0 +1,97 @@
+app-id: io.github.vintage_tactical_radio
+runtime: org.freedesktop.Platform
+runtime-version: '23.08'
+sdk: org.freedesktop.Sdk
+command: vintage-tactical-radio
+
+finish-args:
+  # X11 + XShm access
+  - --share=ipc
+  - --socket=x11
+  # Wayland access
+  - --socket=wayland
+  # Audio access
+  - --socket=pulseaudio
+  # USB device access for RTL-SDR
+  - --device=all
+  # Network access (for future features)
+  - --share=network
+  # Filesystem access for config
+  - --filesystem=home/.config/vintage-tactical-radio:create
+
+build-options:
+  cflags: -O2 -g
+  cxxflags: -O2 -g
+
+cleanup:
+  - /include
+  - /lib/debug
+  - /lib/pkgconfig
+  - /share/doc
+  - /share/man
+  - '*.la'
+  - '*.a'
+
+modules:
+  # RTL-SDR library
+  - name: rtl-sdr
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DDETACH_KERNEL_DRIVER=ON
+      - -DINSTALL_UDEV_RULES=OFF
+    sources:
+      - type: git
+        url: https://github.com/osmocom/rtl-sdr.git
+        tag: v2.0.1
+
+  # FFTW3
+  - name: fftw3
+    buildsystem: autotools
+    config-opts:
+      - --enable-shared
+      - --enable-float
+      - --enable-threads
+    sources:
+      - type: archive
+        url: http://www.fftw.org/fftw-3.3.10.tar.gz
+        sha256: 56c932549852cddcfafdab3820b0200c7742675be92179e59e6215b340e26467
+
+  # Qt6 modules (if not in runtime)
+  - name: qt6-multimedia
+    buildsystem: cmake-ninja
+    builddir: true
+    sources:
+      - type: git
+        url: https://github.com/qt/qtmultimedia.git
+        tag: v6.6.1
+    build-commands:
+      - ninja -C build install
+
+  # spdlog (optional)
+  - name: spdlog
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DSPDLOG_BUILD_EXAMPLE=OFF
+      - -DSPDLOG_BUILD_TESTS=OFF
+    sources:
+      - type: git
+        url: https://github.com/gabime/spdlog.git
+        tag: v1.12.0
+
+  # Main application
+  - name: vintage-tactical-radio
+    buildsystem: cmake-ninja
+    sources:
+      - type: dir
+        path: .
+    post-install:
+      # Install desktop file
+      - install -Dm644 packaging/vintage-tactical-radio.desktop /app/share/applications/${FLATPAK_ID}.desktop
+      - desktop-file-edit --set-key=Icon --set-value=${FLATPAK_ID} /app/share/applications/${FLATPAK_ID}.desktop
+      # Install icon
+      - |
+        for size in 16 32 48 64 128 256; do
+          install -Dm644 packaging/vintage-tactical-radio.png /app/share/icons/hicolor/${size}x${size}/apps/${FLATPAK_ID}.png
+        done
+      # Install AppStream metadata
+      - install -Dm644 packaging/${FLATPAK_ID}.metainfo.xml /app/share/metainfo/${FLATPAK_ID}.metainfo.xml

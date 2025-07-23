@@ -10,6 +10,7 @@ class QLabel;
 class QComboBox;
 class QPushButton;
 class QGroupBox;
+class QCheckBox;
 QT_END_NAMESPACE
 
 class Settings;
@@ -36,6 +37,7 @@ private slots:
     // Device control
     void onDeviceChanged(int index);
     void onStartStop();
+    void onDynamicBandwidthChanged(bool checked);
     
     // Frequency control
     void onFrequencyChanged(double frequency);
@@ -94,6 +96,7 @@ private:
     QComboBox* audioDeviceCombo_;
     QComboBox* sampleRateCombo_;
     QComboBox* sampleFormatCombo_;
+    QCheckBox* dynamicBandwidthCheck_;
     
     // EQ controls
     QComboBox* eqModeCombo_;
@@ -106,6 +109,7 @@ private:
     
     // Status
     QLabel* statusLabel_;
+    QLabel* bandwidthLabel_;
     std::atomic<bool> isRunning_;
     
     // Current state
@@ -130,6 +134,7 @@ private:
     // Helper methods
     void updateFrequencyForBand(int band);
     void updateStatus(const QString& message);
+    void updateBandwidthDisplay();
     void saveSettings();
     void loadSettings();
 };

@@ -17,6 +17,7 @@
 #include <QLabel>
 #include <QComboBox>
 #include <QPushButton>
+#include <QCheckBox>
 #include <QMenuBar>
 #include <QMenu>
 #include <QAction>
@@ -368,9 +369,19 @@ void MainWindow::createSettingsPanel() {
     sampleFormatCombo_->addItems({"16-bit", "24-bit"});
     settingsLayout->addWidget(sampleFormatCombo_, 2, 1);
     
+    // Dynamic bandwidth
+    dynamicBandwidthCheck_ = new QCheckBox(tr("Dynamic Bandwidth"));
+    dynamicBandwidthCheck_->setToolTip(tr("Automatically adjust bandwidth based on signal quality"));
+    dynamicBandwidthCheck_->setChecked(true);
+    settingsLayout->addWidget(dynamicBandwidthCheck_, 3, 0, 1, 2);
+    
+    // Bandwidth display
+    bandwidthLabel_ = new QLabel(tr("Bandwidth: 200 kHz"));
+    settingsLayout->addWidget(bandwidthLabel_, 4, 0, 1, 2);
+    
     // Reset all button
     resetAllButton_ = new QPushButton(tr("Reset All to Defaults"));
-    settingsLayout->addWidget(resetAllButton_, 3, 0, 1, 2);
+    settingsLayout->addWidget(resetAllButton_, 5, 0, 1, 2);
     
     centralWidget()->layout()->addWidget(settingsGroup);
 }
@@ -420,6 +431,8 @@ void MainWindow::connectSignals() {
             this, &MainWindow::onSampleFormatChanged);
     connect(resetAllButton_, &QPushButton::clicked,
             this, &MainWindow::onResetAllClicked);
+    connect(dynamicBandwidthCheck_, &QCheckBox::toggled,
+            this, &MainWindow::onDynamicBandwidthChanged);
     
     // Fine tuning
     connect(tuningKnob_, &VintageKnob::valueChanged,
@@ -512,6 +525,14 @@ void MainWindow::startRadio() {
         isRunning_ = true;
         updateStatus(tr("Radio started"));
         
+        // Start periodic bandwidth updates if dynamic bandwidth is enabled
+        if (dynamicBandwidthCheck_->isChecked()) {
+            QTimer* bandwidthTimer = new QTimer(this);
+            connect(bandwidthTimer, &QTimer::timeout, this, &MainWindow::updateBandwidthDisplay);
+            bandwidthTimer->start(500); // Update every 500ms
+            bandwidthTimer->setProperty("bandwidthUpdateTimer", true);
+        }
+        
 #ifdef HAS_SPDLOG
         spdlog::info("Radio started successfully");
 #endif
@@ -535,6 +556,15 @@ void MainWindow::stopRadio() {
     
     if (rtlsdr_->isOpen()) {
         rtlsdr_->close();
+    }
+    
+    // Stop bandwidth update timer
+    QList<QTimer*> timers = findChildren<QTimer*>();
+    for (QTimer* timer : timers) {
+        if (timer->property("bandwidthUpdateTimer").toBool()) {
+            timer->stop();
+            timer->deleteLater();
+        }
     }
     
     isRunning_ = false;
@@ -593,6 +623,7 @@ void MainWindow::updateFrequencyForBand(int band) {
 void MainWindow::onModeChanged(int mode) {
     if (dspEngine_) {
         dspEngine_->setMode(static_cast<DSPEngine::Mode>(mode));
+        updateBandwidthDisplay();
     }
 }
 
@@ -697,6 +728,9 @@ void MainWindow::onResetAllClicked() {
         sampleRateCombo_->setCurrentIndex(1); // 48000 Hz
         sampleFormatCombo_->setCurrentIndex(0); // 16-bit
         
+        // Reset dynamic bandwidth
+        dynamicBandwidthCheck_->setChecked(true);
+        
         updateStatus(tr("All settings reset to defaults"));
     }
 }
@@ -734,6 +768,8 @@ void MainWindow::saveSettings() {
         settings_->setValue(QString("eq_band_%1").arg(i), eqKnobs_[i]->value());
     }
     
+    settings_->setValue("dynamic_bandwidth", dynamicBandwidthCheck_->isChecked());
+    
     settings_->save();
 }
 
@@ -754,6 +790,8 @@ void MainWindow::loadSettings() {
         eqKnobs_[i]->setValue(value);
         equalizer_->setBandGain(i, value);
     }
+    
+    dynamicBandwidthCheck_->setChecked(settings_->getValue("dynamic_bandwidth", true).toBool());
 }
 
 void MainWindow::closeEvent(QCloseEvent* event) {
@@ -764,4 +802,40 @@ void MainWindow::closeEvent(QCloseEvent* event) {
     }
     
     event->accept();
+}
+
+void MainWindow::onDynamicBandwidthChanged(bool checked) {
+    if (dspEngine_) {
+        dspEngine_->setDynamicBandwidth(checked);
+    }
+    
+    // Handle timer start/stop if radio is running
+    if (isRunning_) {
+        QList<QTimer*> timers = findChildren<QTimer*>();
+        for (QTimer* timer : timers) {
+            if (timer->property("bandwidthUpdateTimer").toBool()) {
+                timer->stop();
+                timer->deleteLater();
+            }
+        }
+        
+        if (checked) {
+            QTimer* bandwidthTimer = new QTimer(this);
+            connect(bandwidthTimer, &QTimer::timeout, this, &MainWindow::updateBandwidthDisplay);
+            bandwidthTimer->start(500); // Update every 500ms
+            bandwidthTimer->setProperty("bandwidthUpdateTimer", true);
+        }
+    }
+    
+    updateBandwidthDisplay();
+}
+
+void MainWindow::updateBandwidthDisplay() {
+    if (dspEngine_) {
+        uint32_t bandwidth = dspEngine_->getBandwidth();
+        QString text = QString("Bandwidth: %1 kHz").arg(bandwidth / 1000.0, 0, 'f', 1);
+        if (bandwidthLabel_) {
+            bandwidthLabel_->setText(text);
+        }
+    }
 }
