@@ -60,6 +60,7 @@ private slots:
     void onEQGainRangeChanged(int index);
     
     // Settings
+    void onSettingsTriggered();
     void onAudioDeviceChanged(int index);
     void onSampleRateChanged(int index);
     void onSampleFormatChanged(int index);
@@ -109,15 +110,6 @@ private:
     QComboBox* bandSelector_;
     QComboBox* modeSelector_;
     
-    // Settings controls
-    QComboBox* audioDeviceCombo_;
-    QComboBox* sampleRateCombo_;
-    QComboBox* sampleFormatCombo_;
-    QCheckBox* dynamicBandwidthCheck_;
-    QCheckBox* biasTCheck_;
-    QSpinBox* ppmSpin_;
-    QComboBox* rtlSampleRateCombo_;
-    
     // EQ controls
     QComboBox* eqModeCombo_;
     QComboBox* eqPresetCombo_;
@@ -126,7 +118,6 @@ private:
     // Buttons
     QPushButton* startStopButton_;
     QPushButton* resetEQButton_;
-    QPushButton* resetAllButton_;
     
     // Memory channel controls
     QComboBox* memoryBankCombo_;
@@ -146,13 +137,15 @@ private:
     int currentBand_;
     int currentTheme_;
     
+    // Settings controls (now in SettingsDialog)
+    class SettingsDialog* settingsDialog_;
+    
     // Setup methods
     void setupUI();
     void createMenuBar();
     void createCentralWidget();
     void createControlPanel();
     void createEQPanel();
-    void createSettingsPanel();
     void createMemoryPanel();
     void connectSignals();
     void applyTheme();
@@ -169,6 +162,7 @@ private:
     void applyOptimalGain(double frequency);
     void saveSettings();
     void loadSettings();
+    void createSettingsDialog();
 };
 
 #endif // MAINWINDOW_H

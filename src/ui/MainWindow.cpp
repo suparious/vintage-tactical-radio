@@ -4,6 +4,7 @@
 #include "FrequencyDial.h"
 #include "SpectrumDisplay.h"
 #include "VintageTheme.h"
+#include "SettingsDialog.h"
 #include "../config/Settings.h"
 #include "../core/RTLSDRDevice.h"
 #include "../core/DSPEngine.h"
@@ -41,6 +42,7 @@ MainWindow::MainWindow(std::shared_ptr<Settings> settings, QWidget* parent)
     , isRunning_(false)
     , currentFrequency_(96900000) // 96.9 MHz
     , currentBand_(2)  // FM band
+    , settingsDialog_(nullptr)
     , currentTheme_(0) { // Military Olive default
     
     setWindowTitle("Vintage Tactical Radio");
@@ -59,6 +61,9 @@ MainWindow::MainWindow(std::shared_ptr<Settings> settings, QWidget* parent)
     
     initializeDevices();
     loadSettings();
+    
+    // Create settings dialog (but don't show it)
+    createSettingsDialog();
     
     // Set initial DSP callbacks
     dspEngine_->setAudioCallback([this](const float* data, size_t length) {
@@ -106,6 +111,13 @@ void MainWindow::setupUI() {
 
 void MainWindow::createMenuBar() {
     auto* fileMenu = menuBar()->addMenu(tr("&File"));
+    
+    auto* settingsAction = new QAction(tr("&Settings..."), this);
+    settingsAction->setShortcut(QKeySequence("Ctrl+,"));
+    connect(settingsAction, &QAction::triggered, this, &MainWindow::onSettingsTriggered);
+    fileMenu->addAction(settingsAction);
+    
+    fileMenu->addSeparator();
     
     auto* exitAction = new QAction(tr("E&xit"), this);
     exitAction->setShortcut(QKeySequence::Quit);
@@ -279,15 +291,16 @@ void MainWindow::createCentralWidget() {
     // EQ panel
     createEQPanel();
     
-    // Settings panel
-    createSettingsPanel();
-    
     // Memory channel panel
     createMemoryPanel();
     
     // Status bar
     statusLabel_ = new QLabel(tr("Ready"));
     statusBar()->addWidget(statusLabel_);
+    
+    // Bandwidth label in status bar
+    bandwidthLabel_ = new QLabel(tr("Bandwidth: 200 kHz"));
+    statusBar()->addPermanentWidget(bandwidthLabel_);
 }
 
 void MainWindow::createControlPanel() {
@@ -401,69 +414,6 @@ void MainWindow::createEQPanel() {
     centralWidget()->layout()->addWidget(eqGroup);
 }
 
-void MainWindow::createSettingsPanel() {
-    auto* settingsGroup = new QGroupBox(tr("SETTINGS"));
-    settingsGroup->setObjectName("settingsPanel");
-    auto* settingsLayout = new QGridLayout(settingsGroup);
-    
-    // Audio device
-    settingsLayout->addWidget(new QLabel(tr("Audio Device:")), 0, 0);
-    audioDeviceCombo_ = new QComboBox();
-    settingsLayout->addWidget(audioDeviceCombo_, 0, 1);
-    
-    // Sample rate
-    settingsLayout->addWidget(new QLabel(tr("Sample Rate:")), 1, 0);
-    sampleRateCombo_ = new QComboBox();
-    sampleRateCombo_->addItems({"44.1 kHz", "48 kHz", "96 kHz", "192 kHz"});
-    sampleRateCombo_->setCurrentIndex(1); // 48 kHz
-    settingsLayout->addWidget(sampleRateCombo_, 1, 1);
-    
-    // Sample format
-    settingsLayout->addWidget(new QLabel(tr("Sample Format:")), 2, 0);
-    sampleFormatCombo_ = new QComboBox();
-    sampleFormatCombo_->addItems({"s16le (16-bit)", "s24le (24-bit)"});
-    settingsLayout->addWidget(sampleFormatCombo_, 2, 1);
-    
-    // Dynamic bandwidth
-    dynamicBandwidthCheck_ = new QCheckBox(tr("Dynamic Bandwidth"));
-    dynamicBandwidthCheck_->setToolTip(tr("Automatically adjust bandwidth based on signal quality"));
-    dynamicBandwidthCheck_->setChecked(true);
-    settingsLayout->addWidget(dynamicBandwidthCheck_, 3, 0, 1, 2);
-    
-    // Bandwidth display
-    bandwidthLabel_ = new QLabel(tr("Bandwidth: 200 kHz"));
-    settingsLayout->addWidget(bandwidthLabel_, 4, 0, 1, 2);
-    
-    // Bias-T control
-    biasTCheck_ = new QCheckBox(tr("Bias-T Power"));
-    biasTCheck_->setToolTip(tr("Enable 4.5V power for active antennas"));
-    biasTCheck_->setChecked(false);
-    settingsLayout->addWidget(biasTCheck_, 5, 0, 1, 2);
-    
-    // PPM correction
-    settingsLayout->addWidget(new QLabel(tr("PPM Correction:")), 6, 0);
-    ppmSpin_ = new QSpinBox();
-    ppmSpin_->setRange(-100, 100);
-    ppmSpin_->setValue(0);
-    ppmSpin_->setSuffix(" ppm");
-    ppmSpin_->setToolTip(tr("Frequency correction in parts per million"));
-    settingsLayout->addWidget(ppmSpin_, 6, 1);
-    
-    // RTL-SDR sample rate
-    settingsLayout->addWidget(new QLabel(tr("RTL-SDR Rate:")), 7, 0);
-    rtlSampleRateCombo_ = new QComboBox();
-    rtlSampleRateCombo_->addItems({"2.048 MHz", "2.4 MHz (default)", "2.56 MHz", "3.2 MHz"});
-    rtlSampleRateCombo_->setCurrentIndex(1); // 2.4 MHz default
-    rtlSampleRateCombo_->setToolTip(tr("RTL-SDR sampling rate - 2.4 MHz recommended for stability"));
-    settingsLayout->addWidget(rtlSampleRateCombo_, 7, 1);
-    
-    // Reset all button
-    resetAllButton_ = new QPushButton(tr("Reset All to Defaults"));
-    settingsLayout->addWidget(resetAllButton_, 8, 0, 1, 2);
-    
-    centralWidget()->layout()->addWidget(settingsGroup);
-}
-
 void MainWindow::connectSignals() {
     // Device control
     connect(deviceCombo_, QOverload<int>::of(&QComboBox::currentIndexChanged),
@@ -501,24 +451,6 @@ void MainWindow::connectSignals() {
         connect(eqKnobs_[i], &VintageKnob::valueChanged,
                 [this, i](double value) { onEQBandChanged(i, value); });
     }
-    
-    // Settings
-    connect(audioDeviceCombo_, QOverload<int>::of(&QComboBox::currentIndexChanged),
-            this, &MainWindow::onAudioDeviceChanged);
-    connect(sampleRateCombo_, QOverload<int>::of(&QComboBox::currentIndexChanged),
-            this, &MainWindow::onSampleRateChanged);
-    connect(sampleFormatCombo_, QOverload<int>::of(&QComboBox::currentIndexChanged),
-            this, &MainWindow::onSampleFormatChanged);
-    connect(resetAllButton_, &QPushButton::clicked,
-            this, &MainWindow::onResetAllClicked);
-    connect(dynamicBandwidthCheck_, &QCheckBox::toggled,
-            this, &MainWindow::onDynamicBandwidthChanged);
-    connect(biasTCheck_, &QCheckBox::toggled,
-            this, &MainWindow::onBiasTChanged);
-    connect(ppmSpin_, QOverload<int>::of(&QSpinBox::valueChanged),
-            this, &MainWindow::onPpmChanged);
-    connect(rtlSampleRateCombo_, QOverload<int>::of(&QComboBox::currentIndexChanged),
-            this, &MainWindow::onRtlSampleRateChanged);
     
     // Fine tuning
     connect(tuningKnob_, &VintageKnob::valueChanged,
@@ -562,16 +494,6 @@ void MainWindow::initializeDevices() {
         deviceCombo_->addItem(tr("No RTL-SDR devices found"));
         startStopButton_->setEnabled(false);
     }
-    
-    // Populate audio devices
-    auto audioDevices = audioOutput_->getDevices();
-    audioDeviceCombo_->clear();
-    for (const auto& device : audioDevices) {
-        audioDeviceCombo_->addItem(device.name);
-        if (device.isDefault) {
-            audioDeviceCombo_->setCurrentIndex(audioDeviceCombo_->count() - 1);
-        }
-    }
 }
 
 void MainWindow::onDeviceChanged(int index) {
@@ -606,19 +528,18 @@ void MainWindow::startRadio() {
         rtlsdr_->setCenterFrequency(currentFrequency_);
         
         // Apply selected sample rate
-        const uint32_t rtlRates[] = {2048000, 2400000, 2560000, 3200000};
-        int rateIndex = rtlSampleRateCombo_->currentIndex();
-        if (rateIndex >= 0 && rateIndex < 4) {
-            rtlsdr_->setSampleRate(rtlRates[rateIndex]);
-            dspEngine_->setSampleRate(rtlRates[rateIndex]);
-        }
+        uint32_t sampleRate = settingsDialog_ ? settingsDialog_->getRtlSampleRate() : 2400000;
+        rtlsdr_->setSampleRate(sampleRate);
+        dspEngine_->setSampleRate(sampleRate);
         
         rtlsdr_->setGain(gainKnob_->value() * 10); // Convert to tenths of dB
-        rtlsdr_->setFrequencyCorrection(ppmSpin_->value()); // Apply PPM correction
         
-        // Apply bias-T if enabled
-        if (biasTCheck_->isChecked()) {
-            rtlsdr_->setBiasT(true);
+        // Apply PPM and bias-T from settings dialog if it exists
+        if (settingsDialog_) {
+            rtlsdr_->setFrequencyCorrection(settingsDialog_->getPpm());
+            if (settingsDialog_->getBiasT()) {
+                rtlsdr_->setBiasT(true);
+            }
         }
         
         // Set RTL-SDR data callback
@@ -627,9 +548,41 @@ void MainWindow::startRadio() {
         });
         
         // Configure DSP
-        dspEngine_->setSampleRate(2400000);
         dspEngine_->setMode(static_cast<DSPEngine::Mode>(modeSelector_->currentIndex()));
         dspEngine_->setSquelch(squelchKnob_->value());
+        
+        // Configure audio output with current settings
+        if (settingsDialog_) {
+            // Apply audio device
+            auto devices = audioOutput_->getDevices();
+            int deviceIndex = settings_->getValue("audio_device_index", 0).toInt();
+            if (deviceIndex >= 0 && static_cast<size_t>(deviceIndex) < devices.size()) {
+                audioOutput_->setDevice(devices[deviceIndex].id);
+            }
+            
+            // Apply sample rate and format from settings dialog
+            audioOutput_->setSampleRate(settingsDialog_->getSampleRate());
+            
+            if (settingsDialog_->getSampleFormat() == 0) {
+                audioOutput_->setSampleFormat(QAudioFormat::Int16);
+            } else {
+                audioOutput_->setSampleFormat(QAudioFormat::Int32);
+            }
+        } else {
+            // Use default settings if dialog not created yet
+            const int rates[] = {44100, 48000, 96000, 192000};
+            int rateIndex = settings_->getValue("audio_sample_rate", 1).toInt();
+            if (rateIndex >= 0 && rateIndex < 4) {
+                audioOutput_->setSampleRate(rates[rateIndex]);
+            }
+            
+            int formatIndex = settings_->getValue("audio_sample_format", 0).toInt();
+            if (formatIndex == 0) {
+                audioOutput_->setSampleFormat(QAudioFormat::Int16);
+            } else {
+                audioOutput_->setSampleFormat(QAudioFormat::Int32);
+            }
+        }
         
         // Start audio output
         audioOutput_->start();
@@ -644,7 +597,9 @@ void MainWindow::startRadio() {
         updateStatus(tr("Radio started"));
         
         // Start periodic bandwidth updates if dynamic bandwidth is enabled
-        if (dynamicBandwidthCheck_->isChecked()) {
+        bool dynamicBandwidth = settingsDialog_ ? settingsDialog_->getDynamicBandwidth() : 
+                               settings_->getValue("dynamic_bandwidth", true).toBool();
+        if (dynamicBandwidth) {
             QTimer* bandwidthTimer = new QTimer(this);
             connect(bandwidthTimer, &QTimer::timeout, this, &MainWindow::updateBandwidthDisplay);
             bandwidthTimer->start(500); // Update every 500ms
@@ -828,11 +783,9 @@ void MainWindow::onEQGainRangeChanged(int index) {
 }
 
 void MainWindow::onAudioDeviceChanged(int index) {
-    if (index >= 0 && index < audioDeviceCombo_->count()) {
-        auto devices = audioOutput_->getDevices();
-        if (static_cast<size_t>(index) < devices.size()) {
-            audioOutput_->setDevice(devices[index].id);
-        }
+    auto devices = audioOutput_->getDevices();
+    if (index >= 0 && static_cast<size_t>(index) < devices.size()) {
+        audioOutput_->setDevice(devices[index].id);
     }
 }
 
@@ -852,34 +805,21 @@ void MainWindow::onSampleFormatChanged(int index) {
 }
 
 void MainWindow::onResetAllClicked() {
-    auto reply = QMessageBox::question(this, tr("Reset All Settings"),
-                                     tr("Are you sure you want to reset all settings to defaults?"),
-                                     QMessageBox::Yes | QMessageBox::No);
+    // Reset main controls to defaults
+    volumeKnob_->setValue(75);
+    squelchKnob_->setValue(-20);
+    gainKnob_->setValue(25);
+    tuningKnob_->setValue(0);
     
-    if (reply == QMessageBox::Yes) {
-        // Reset all controls to defaults
-        volumeKnob_->setValue(75);
-        squelchKnob_->setValue(-20);
-        gainKnob_->setValue(25);
-        tuningKnob_->setValue(0);
-        
-        // Reset EQ
-        onEQResetClicked();
-        eqModeCombo_->setCurrentIndex(0);
-        
-        // Reset mode and band
-        modeSelector_->setCurrentIndex(2); // FM-Wide
-        bandSelector_->setCurrentIndex(2); // FM band
-        
-        // Reset audio settings
-        sampleRateCombo_->setCurrentIndex(1); // 48000 Hz
-        sampleFormatCombo_->setCurrentIndex(0); // 16-bit
-        
-        // Reset dynamic bandwidth
-        dynamicBandwidthCheck_->setChecked(true);
-        
-        updateStatus(tr("All settings reset to defaults"));
-    }
+    // Reset EQ
+    onEQResetClicked();
+    eqModeCombo_->setCurrentIndex(0);
+    
+    // Reset mode and band
+    modeSelector_->setCurrentIndex(2); // FM-Wide
+    bandSelector_->setCurrentIndex(2); // FM band
+    
+    updateStatus(tr("All settings reset to defaults"));
 }
 
 void MainWindow::onSignalStrengthChanged(float strength) {
@@ -916,7 +856,10 @@ void MainWindow::saveSettings() {
         settings_->setValue(QString("eq_band_%1").arg(i), eqKnobs_[i]->value());
     }
     
-    settings_->setValue("dynamic_bandwidth", dynamicBandwidthCheck_->isChecked());
+    // Save settings from dialog if it exists
+    if (settingsDialog_) {
+        settingsDialog_->saveSettings();
+    }
     
     // Save memory channels
     QString memoryFile = settings_->getConfigPath() + "/memory_channels.json";
@@ -943,7 +886,7 @@ void MainWindow::loadSettings() {
         equalizer_->setBandGain(i, value);
     }
     
-    dynamicBandwidthCheck_->setChecked(settings_->getValue("dynamic_bandwidth", true).toBool());
+    // Dynamic bandwidth will be loaded by the settings dialog
     
     // Load memory channels
     QString memoryFile = settings_->getConfigPath() + "/memory_channels.json";
@@ -988,12 +931,48 @@ void MainWindow::onDynamicBandwidthChanged(bool checked) {
     updateBandwidthDisplay();
 }
 
+void MainWindow::onSettingsTriggered() {
+    if (!settingsDialog_) {
+        createSettingsDialog();
+    }
+    
+    settingsDialog_->show();
+    settingsDialog_->raise();
+    settingsDialog_->activateWindow();
+}
+
+void MainWindow::createSettingsDialog() {
+    settingsDialog_ = new SettingsDialog(settings_, audioOutput_.get(), rtlsdr_.get(), this);
+    
+    // Connect settings dialog signals
+    connect(settingsDialog_, &SettingsDialog::audioDeviceChanged,
+            this, &MainWindow::onAudioDeviceChanged);
+    connect(settingsDialog_, &SettingsDialog::sampleRateChanged,
+            this, &MainWindow::onSampleRateChanged);
+    connect(settingsDialog_, &SettingsDialog::sampleFormatChanged,
+            this, &MainWindow::onSampleFormatChanged);
+    connect(settingsDialog_, &SettingsDialog::dynamicBandwidthChanged,
+            this, &MainWindow::onDynamicBandwidthChanged);
+    connect(settingsDialog_, &SettingsDialog::biasTChanged,
+            this, &MainWindow::onBiasTChanged);
+    connect(settingsDialog_, &SettingsDialog::ppmChanged,
+            this, &MainWindow::onPpmChanged);
+    connect(settingsDialog_, &SettingsDialog::rtlSampleRateChanged,
+            this, &MainWindow::onRtlSampleRateChanged);
+    connect(settingsDialog_, &SettingsDialog::resetAllClicked,
+            this, &MainWindow::onResetAllClicked);
+}
+
 void MainWindow::updateBandwidthDisplay() {
     if (dspEngine_) {
         uint32_t bandwidth = dspEngine_->getBandwidth();
         QString text = QString("Bandwidth: %1 kHz").arg(bandwidth / 1000.0, 0, 'f', 1);
         if (bandwidthLabel_) {
             bandwidthLabel_->setText(text);
+        }
+        // Update settings dialog if it exists
+        if (settingsDialog_) {
+            settingsDialog_->updateBandwidthDisplay(text);
         }
     }
 }

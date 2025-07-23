@@ -3,6 +3,7 @@
 
 chmod +x build.sh
 chmod +x rebuild.sh
+chmod +x clean-build.sh
 chmod +x build-deb.sh
 chmod +x build-deb-proper.sh
 chmod +x build-appimage.sh

@@ -51,6 +51,7 @@ set(SOURCES
     src/ui/FrequencyDial.cpp
     src/ui/SpectrumDisplay.cpp
     src/ui/VintageTheme.cpp
+    src/ui/SettingsDialog.cpp
     src/config/Settings.cpp
     src/config/MemoryChannel.cpp
 )
@@ -73,6 +74,7 @@ set(HEADERS
     src/ui/FrequencyDial.h
     src/ui/SpectrumDisplay.h
     src/ui/VintageTheme.h
+    src/ui/SettingsDialog.h
     src/config/Settings.h
     src/config/MemoryChannel.h
 )
