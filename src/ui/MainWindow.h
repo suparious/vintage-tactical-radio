@@ -24,6 +24,11 @@ class FrequencyDial;
 class SpectrumDisplay;
 class MemoryChannelManager;
 class QSpinBox;
+class AntennaWidget;
+class RecordingWidget;
+class RecordingManager;
+class Scanner;
+class ScannerWidget;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -82,6 +87,10 @@ private slots:
     void onMemoryChannelChanged();
     void onQuickChannelSelected(int index);
     
+    // Scanner control
+    void onScannerFrequencyChanged(double frequency);
+    void updateMemoryChannelsForScanner();
+    
 private:
     // Core components
     std::shared_ptr<Settings> settings_;
@@ -90,6 +99,8 @@ private:
     std::unique_ptr<AudioOutput> audioOutput_;
     std::unique_ptr<VintageEqualizer> equalizer_;
     std::unique_ptr<MemoryChannelManager> memoryManager_;
+    std::unique_ptr<RecordingManager> recordingManager_;
+    std::unique_ptr<Scanner> scanner_;
     
     // UI components
     FrequencyDial* frequencyDial_;
@@ -130,6 +141,9 @@ private:
     // Status
     QLabel* statusLabel_;
     QLabel* bandwidthLabel_;
+    AntennaWidget* antennaWidget_;
+    RecordingWidget* recordingWidget_;
+    ScannerWidget* scannerWidget_;
     std::atomic<bool> isRunning_;
     
     // Current state
@@ -147,6 +161,8 @@ private:
     void createControlPanel();
     void createEQPanel();
     void createMemoryPanel();
+    void createRecordingPanel();
+    void createScannerPanel();
     void connectSignals();
     void applyTheme();
     

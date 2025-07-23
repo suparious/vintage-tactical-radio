@@ -5,11 +5,16 @@
 #include "SpectrumDisplay.h"
 #include "VintageTheme.h"
 #include "SettingsDialog.h"
+#include "AntennaWidget.h"
+#include "RecordingWidget.h"
+#include "ScannerWidget.h"
 #include "../config/Settings.h"
 #include "../core/RTLSDRDevice.h"
 #include "../core/DSPEngine.h"
 #include "../audio/AudioOutput.h"
 #include "../audio/VintageEqualizer.h"
+#include "../audio/RecordingManager.h"
+#include "../dsp/Scanner.h"
 #include "../config/MemoryChannel.h"
 
 #include <QVBoxLayout>
@@ -42,8 +47,8 @@ MainWindow::MainWindow(std::shared_ptr<Settings> settings, QWidget* parent)
     , isRunning_(false)
     , currentFrequency_(96900000) // 96.9 MHz
     , currentBand_(2)  // FM band
-    , settingsDialog_(nullptr)
-    , currentTheme_(0) { // Military Olive default
+    , currentTheme_(0) // Military Olive default
+    , settingsDialog_(nullptr) {
     
     setWindowTitle("Vintage Tactical Radio");
     setWindowIcon(QIcon(":/images/radio-icon.png"));
@@ -54,6 +59,8 @@ MainWindow::MainWindow(std::shared_ptr<Settings> settings, QWidget* parent)
     audioOutput_ = std::make_unique<AudioOutput>(this);
     equalizer_ = std::make_unique<VintageEqualizer>(48000, VintageEqualizer::MODERN);
     memoryManager_ = std::make_unique<MemoryChannelManager>();
+    recordingManager_ = std::make_unique<RecordingManager>();
+    scanner_ = std::make_unique<Scanner>();
     
     setupUI();
     connectSignals();
@@ -73,6 +80,11 @@ MainWindow::MainWindow(std::shared_ptr<Settings> settings, QWidget* parent)
         
         // Send to audio output
         audioOutput_->writeAudio(eqBuffer.data(), length);
+        
+        // Send to recording manager if recording
+        if (recordingManager_->isRecording()) {
+            recordingManager_->writeAudioData(eqBuffer.data(), length);
+        }
     });
     
     dspEngine_->setSignalCallback([this](float strength) {
@@ -294,9 +306,19 @@ void MainWindow::createCentralWidget() {
     // Memory channel panel
     createMemoryPanel();
     
+    // Recording panel
+    createRecordingPanel();
+    
+    // Scanner panel
+    createScannerPanel();
+    
     // Status bar
     statusLabel_ = new QLabel(tr("Ready"));
     statusBar()->addWidget(statusLabel_);
+    
+    // Antenna widget in status bar
+    antennaWidget_ = new AntennaWidget(this);
+    statusBar()->addPermanentWidget(antennaWidget_);
     
     // Bandwidth label in status bar
     bandwidthLabel_ = new QLabel(tr("Bandwidth: 200 kHz"));
@@ -545,11 +567,54 @@ void MainWindow::startRadio() {
         // Set RTL-SDR data callback
         rtlsdr_->setDataCallback([this](const uint8_t* data, size_t length) {
             dspEngine_->processIQ(data, length);
+            
+            // Send IQ data to recording manager if recording IQ
+            if (recordingManager_->isRecording()) {
+                auto info = recordingManager_->getCurrentRecording();
+                if (info.type == RecordingManager::RecordingType::IQ) {
+                    recordingManager_->writeIQData(data, length);
+                }
+            }
         });
         
         // Configure DSP
         dspEngine_->setMode(static_cast<DSPEngine::Mode>(modeSelector_->currentIndex()));
         dspEngine_->setSquelch(squelchKnob_->value());
+        
+        // Configure scanner
+        scanner_->setRTLSDR(rtlsdr_.get());
+        scanner_->setDSPEngine(dspEngine_.get());
+    
+    // Set scanner parameters based on current band
+    Scanner::ScanParameters scanParams;
+    switch (currentBand_) {
+        case 0: // MW
+            scanParams.startFreq = 530e3;
+            scanParams.endFreq = 1700e3;
+            scanParams.stepSize = 10e3;
+            break;
+        case 1: // SW
+            scanParams.startFreq = 3e6;
+            scanParams.endFreq = 30e6;
+            scanParams.stepSize = 5e3;
+            break;
+        case 2: // FM
+            scanParams.startFreq = 88e6;
+            scanParams.endFreq = 108e6;
+            scanParams.stepSize = 100e3;
+            break;
+        case 3: // VHF
+            scanParams.startFreq = 136e6;
+            scanParams.endFreq = 174e6;
+            scanParams.stepSize = 12.5e3;
+            break;
+        case 4: // UHF
+            scanParams.startFreq = 420e6;
+            scanParams.endFreq = 470e6;
+            scanParams.stepSize = 25e3;
+            break;
+    }
+    scanner_->setScanParameters(scanParams);
         
         // Configure audio output with current settings
         if (settingsDialog_) {
@@ -621,6 +686,11 @@ void MainWindow::stopRadio() {
         rtlsdr_->stopStreaming();
     }
     
+    // Stop scanner if running
+    if (scanner_->isScanning()) {
+        scanner_->stopScan();
+    }
+    
     if (dspEngine_->isRunning()) {
         dspEngine_->stop();
     }
@@ -668,6 +738,14 @@ void MainWindow::onFrequencyChanged(double frequency) {
         bandSelector_->setCurrentIndex(0); // MW
     }
     
+    // Update antenna recommendation
+    antennaWidget_->updateFrequency(frequency);
+    
+    // Update recording widget
+    if (recordingWidget_) {
+        recordingWidget_->setFrequency(frequency);
+    }
+    
     // Apply optimal gain for the frequency
     applyOptimalGain(frequency);
 }
@@ -675,6 +753,37 @@ void MainWindow::onFrequencyChanged(double frequency) {
 void MainWindow::onBandChanged(int band) {
     currentBand_ = band;
     updateFrequencyForBand(band);
+    
+    // Update scanner parameters for new band
+    Scanner::ScanParameters scanParams;
+    switch (band) {
+        case 0: // MW
+            scanParams.startFreq = 530e3;
+            scanParams.endFreq = 1700e3;
+            scanParams.stepSize = 10e3;
+            break;
+        case 1: // SW
+            scanParams.startFreq = 3e6;
+            scanParams.endFreq = 30e6;
+            scanParams.stepSize = 5e3;
+            break;
+        case 2: // FM
+            scanParams.startFreq = 88e6;
+            scanParams.endFreq = 108e6;
+            scanParams.stepSize = 100e3;
+            break;
+        case 3: // VHF
+            scanParams.startFreq = 136e6;
+            scanParams.endFreq = 174e6;
+            scanParams.stepSize = 12.5e3;
+            break;
+        case 4: // UHF
+            scanParams.startFreq = 420e6;
+            scanParams.endFreq = 470e6;
+            scanParams.stepSize = 25e3;
+            break;
+    }
+    scanner_->setScanParameters(scanParams);
 }
 
 void MainWindow::updateFrequencyForBand(int band) {
@@ -705,6 +814,11 @@ void MainWindow::onModeChanged(int mode) {
     if (dspEngine_) {
         dspEngine_->setMode(static_cast<DSPEngine::Mode>(mode));
         updateBandwidthDisplay();
+    }
+    
+    // Update recording widget
+    if (recordingWidget_) {
+        recordingWidget_->setMode(modeSelector_->currentText());
     }
 }
 
@@ -892,6 +1006,7 @@ void MainWindow::loadSettings() {
     QString memoryFile = settings_->getConfigPath() + "/memory_channels.json";
     if (QFile::exists(memoryFile)) {
         memoryManager_->loadFromFile(memoryFile);
+        updateMemoryChannelsForScanner();
     }
 }
 
@@ -1110,6 +1225,7 @@ void MainWindow::onMemoryStore() {
                 .arg(channel));
     
     onMemoryChannelChanged();
+    updateMemoryChannelsForScanner();
 }
 
 void MainWindow::onMemoryRecall() {
@@ -1150,6 +1266,7 @@ void MainWindow::onMemoryClear() {
     
     updateStatus(tr("Cleared memory %1-%2").arg(bank).arg(channel));
     onMemoryChannelChanged();
+    updateMemoryChannelsForScanner();
 }
 
 void MainWindow::onMemoryChannelChanged() {
@@ -1185,5 +1302,69 @@ void MainWindow::onQuickChannelSelected(int index) {
         
         // Reset combo box to show "-- Select --"
         quickChannelCombo_->setCurrentIndex(0);
+    }
+}
+
+void MainWindow::createRecordingPanel() {
+    auto* recordingGroup = new QGroupBox(tr("RECORDING"));
+    recordingGroup->setObjectName("recordingPanel");
+    auto* recordingLayout = new QVBoxLayout(recordingGroup);
+    
+    // Create recording widget
+    recordingWidget_ = new RecordingWidget(this);
+    recordingWidget_->setRecordingManager(recordingManager_.get());
+    recordingWidget_->setFrequency(currentFrequency_);
+    recordingWidget_->setMode(modeSelector_->currentText());
+    
+    recordingLayout->addWidget(recordingWidget_);
+    
+    centralWidget()->layout()->addWidget(recordingGroup);
+}
+
+void MainWindow::createScannerPanel() {
+    auto* scannerGroup = new QGroupBox(tr("SCANNER"));
+    scannerGroup->setObjectName("scannerPanel");
+    auto* scannerLayout = new QVBoxLayout(scannerGroup);
+    
+    // Create scanner widget
+    scannerWidget_ = new ScannerWidget(this);
+    scannerWidget_->setScanner(scanner_.get());
+    
+    // Connect scanner signals
+    connect(scanner_.get(), &Scanner::frequencyChanged,
+            this, &MainWindow::onScannerFrequencyChanged);
+    
+    // Update scanner with memory channels
+    updateMemoryChannelsForScanner();
+    
+    scannerLayout->addWidget(scannerWidget_);
+    
+    centralWidget()->layout()->addWidget(scannerGroup);
+}
+
+void MainWindow::onScannerFrequencyChanged(double frequency) {
+    // Update main frequency when scanner changes it
+    onFrequencyChanged(frequency);
+}
+
+void MainWindow::updateMemoryChannelsForScanner() {
+    std::vector<Scanner::Channel> scannerChannels;
+    
+    // Convert memory channels to scanner channels
+    for (int i = 0; i < MemoryChannelManager::TOTAL_CHANNELS; i++) {
+        auto memChannel = memoryManager_->getChannel(i);
+        if (!memChannel.isEmpty()) {
+            Scanner::Channel ch;
+            ch.frequency = memChannel.frequency();
+            ch.name = memChannel.name();
+            ch.mode = memChannel.mode();
+            ch.priority = false;
+            ch.priorityLevel = 0;
+            scannerChannels.push_back(ch);
+        }
+    }
+    
+    if (scannerWidget_) {
+        scannerWidget_->setMemoryChannels(scannerChannels);
     }
 }

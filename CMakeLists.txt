@@ -37,14 +37,17 @@ set(SOURCES
     src/core/RTLSDRDevice.cpp
     src/core/DSPEngine.cpp
     src/core/RingBuffer.cpp
+    src/core/AntennaRecommendation.cpp
     src/audio/AudioOutput.cpp
     src/audio/VintageEqualizer.cpp
+    src/audio/RecordingManager.cpp
     src/dsp/AMDemodulator.cpp
     src/dsp/FMDemodulator.cpp
     src/dsp/SSBDemodulator.cpp
     src/dsp/AGC.cpp
     src/dsp/Squelch.cpp
     src/dsp/NoiseReduction.cpp
+    src/dsp/Scanner.cpp
     src/ui/MainWindow.cpp
     src/ui/VintageKnob.cpp
     src/ui/VintageMeter.cpp
@@ -52,6 +55,9 @@ set(SOURCES
     src/ui/SpectrumDisplay.cpp
     src/ui/VintageTheme.cpp
     src/ui/SettingsDialog.cpp
+    src/ui/AntennaWidget.cpp
+    src/ui/RecordingWidget.cpp
+    src/ui/ScannerWidget.cpp
     src/config/Settings.cpp
     src/config/MemoryChannel.cpp
 )
@@ -60,14 +66,17 @@ set(HEADERS
     src/core/RTLSDRDevice.h
     src/core/DSPEngine.h
     src/core/RingBuffer.h
+    src/core/AntennaRecommendation.h
     src/audio/AudioOutput.h
     src/audio/VintageEqualizer.h
+    src/audio/RecordingManager.h
     src/dsp/AMDemodulator.h
     src/dsp/FMDemodulator.h
     src/dsp/SSBDemodulator.h
     src/dsp/AGC.h
     src/dsp/Squelch.h
     src/dsp/NoiseReduction.h
+    src/dsp/Scanner.h
     src/ui/MainWindow.h
     src/ui/VintageKnob.h
     src/ui/VintageMeter.h
@@ -75,6 +84,9 @@ set(HEADERS
     src/ui/SpectrumDisplay.h
     src/ui/VintageTheme.h
     src/ui/SettingsDialog.h
+    src/ui/AntennaWidget.h
+    src/ui/RecordingWidget.h
+    src/ui/ScannerWidget.h
     src/config/Settings.h
     src/config/MemoryChannel.h
 )
